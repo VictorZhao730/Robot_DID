@@ -2,9 +2,11 @@
 
 ## Project Overview
 
-This project is a Hardhat-based prototype for decentralized digital identity and verifiable credentials (VCs) for robots on the UZHETH PoS test network.
+This project is a Hardhat-based prototype for decentralized digital identity and VC-inspired credentials for robots on the UZHETH PoS test network.
 
-Each physical robot is represented by a `RobotIdentityNFT` (ERC-721). It receives a stable `did:uzheth:robot:<tokenId>` identifier, registers device keys in an on-chain registry, and can issue W3C-style credentials that third parties verify independently. **Management ownership** (NFT holder) is separated from **operational signing** (robot device key). Verification policy is shared across the web UI, CLI tools, and automated tests.
+Each physical robot is represented by a `RobotIdentityNFT` (ERC-721). It receives a stable `did:uzheth:robot:<tokenId>` identifier, registers device keys in an on-chain registry, and can issue signed JSON credentials that third parties verify independently. **Management ownership** (NFT holder) is separated from **operational signing** (robot device key). Verification policy is **equivalent** across the web UI (`ui/js/`), CLI verifier (`lib/`), and automated tests.
+
+**Technical scope:** project-specific `did:uzheth` method and canonical JSON credentials — not a full W3C DID resolver, JSON-LD, JWS, or VC-JWT stack. Signatures use **EIP-191** (`signMessage` / `verifyMessage`) over a Keccak256 digest of canonical JSON (register challenge uses a separate `keccak256(abi.encode("RegisterRobotKey", ...))` digest).
 
 ## Architecture
 
@@ -47,7 +49,7 @@ The NFT owner is the **management owner** (registration, suspension, revocation)
    - **Controller delegated** — maintenance/operational logs by an authorized operator
    - **External issuer signed** — maintenance, safety, manufacturing, or license certificates from a registered issuer
 4. Optionally **anchor** the credential on-chain (hash, `publishedAt`, optional consumption limit).
-5. A verifier checks signature, schema, key history at `issuedAt`, suspension intervals, expiry, issuer trust, anchor timing, and consumption state.
+5. A verifier checks signature, credential policy, key history at `issuedAt`, suspension intervals, expiry, issuer trust, anchor timing, and consumption state.
 6. Suspend, revoke DID, or revoke individual credentials as needed.
 
 Credentials are typically transmitted off-chain; the verifier does not trust the delivery channel, only cryptographic and on-chain checks.
@@ -158,7 +160,7 @@ node robot/issueCredential.js          # deprecated wrapper → issuer script
 
 ### Verify credentials (Node)
 
-Runs the same verification policy as the web UI against a credential file.
+Runs the equivalent verification policy as the web UI (`lib/` vs mirrored `ui/js/`) against a credential file.
 
 ```bash
 node verifier/verifyCredential.js <path-to-credential.json>
@@ -180,7 +182,7 @@ cd ui && python -m http.server 8080
 
 Open `http://localhost:8080`, connect MetaMask to UZHETH PoS, and enter the registry address on **Setup**.
 
-Tabs: Setup → Create Robot → Manage DID → Register Issuer → Issue VC → Verify.
+Sections (single page): Setup → Create Robot → Manage DID → Register Issuer → Issue VC → Verify.
 
 ## Web UI Manual
 
@@ -302,7 +304,7 @@ Click the card's sign button; the generated JSON appears in the output panel bel
 
 - Upload a `.json` file or paste credential JSON.
 - **Max publish delay (seconds)** — default `86400` (24 h). For anchored VCs, requires `issuedAt <= publishedAt <= issuedAt + delay`.
-- **Verify Credential** — read-only policy check; opens **Credential Verification Details** panel (schema, signature, key history, suspension, anchor timing, consumption).
+- **Verify Credential** — read-only policy check; opens **Credential Verification Details** panel (policy, signature, key history, suspension, anchor timing, consumption).
 - **Verify + Consume Credential On-chain** — verify, then increment use count if a limited-use anchor exists.
 - **Revoke Credential On-chain** — revoke one credential by hash (requires permission).
 
@@ -355,9 +357,12 @@ Never commit private keys or `.env`. Robot keys should use secure storage in pro
 
 ## Limitations and Future Work
 
-- Key rotation does not yet require an on-chain signature from the new key.
+- Key rotation does not yet require a proof-of-possession signature from the new key; rotation is also blocked while the DID is suspended.
 - Unanchored credentials are not protected against `issuedAt` backdating; high-risk types should require anchoring.
-- Custom `did:uzheth` method; no full JSON-LD resolver service.
+- Browser UI and Node CLI use equivalent but separately maintained policy logic (`ui/js/` vs `lib/`) — risk of policy drift if only one side is updated.
+- `proofPurpose` and per-type `maxValidityDays` are set at issuance but not fully enforced at verification (expiry and signer checks are enforced).
+- `RobotOwnershipCredential` / `OWNER_ISSUER_ROLE` exist in contracts but are not in the eight-type policy set.
+- Custom `did:uzheth` method; no full JSON-LD resolver service; not W3C VC-JWT / JWS compatible.
 - Event timeline queries a bounded recent block range.
 
 See `summary.md` for a detailed feature list, threat mitigations, and design notes.
