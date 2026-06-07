@@ -1,0 +1,216 @@
+(base) G:\>cd G:\UZH\26s\Blockchain\did
+
+(base) G:\UZH\26s\Blockchain\did>conda activate did
+
+(did) G:\UZH\26s\Blockchain\did>node -v
+v25.8.2
+
+(did) G:\UZH\26s\Blockchain\did>npm -v
+11.11.1
+
+(did) G:\UZH\26s\Blockchain\did>npx hardhat compile
+WARNING: You are currently using Node.js v25.8.2, which is not supported by Hardhat. This can lead to unexpected behavior. See https://v2.hardhat.org/nodejs-versions
+
+
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+× Help us improve Hardhat with anonymous crash reports & basic usage data? (Y/n) · y
+Nothing to compile
+
+(did) G:\UZH\26s\Blockchain\did>npx hardhat test
+WARNING: You are currently using Node.js v25.8.2, which is not supported by Hardhat. This can lead to unexpected behavior. See https://v2.hardhat.org/nodejs-versions
+
+
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+× Help us improve Hardhat with anonymous crash reports & basic usage data? (Y/n) · y
+
+
+  did:uzheth helpers
+    √ converts between robot address and DID (98ms)
+    √ builds a W3C-style DID Document (41ms)
+    √ checks that the registry public key matches the DID address
+
+  RobotDIDRegistry
+    √ registers a DID (4310ms)
+    √ rejects duplicate DID registration
+    √ allows owner to update public key
+    √ rejects public key update by non-owner
+    √ revokes a DID
+    √ rejects public key update after revocation
+    √ updates metadata URI
+    √ returns false for non-existing DID in isActive
+
+
+  11 passing (5s)
+
+
+(did) G:\UZH\26s\Blockchain\did>npx hardhat run scripts/deploy.js --network uzhethpos
+WARNING: You are currently using Node.js v25.8.2, which is not supported by Hardhat. This can lead to unexpected behavior. See https://v2.hardhat.org/nodejs-versions
+
+
+◇ injected env (4) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+× Help us improve Hardhat with anonymous crash reports & basic usage data? (Y/n) · y
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+Network: uzhethpos
+Deployer: 0x3e453c9D3B8438CCF8f973A8AB8b3A70B9e1f81c
+Deployer balance: 4.0 UZHETHs
+RobotDIDRegistry deployed to: 0xace941BD3330f70df51dCE91F18C3d02F0A49938
+
+(did) G:\UZH\26s\Blockchain\did>npx hardhat run scripts/registerRobot.js --network uzhethpos
+WARNING: You are currently using Node.js v25.8.2, which is not supported by Hardhat. This can lead to unexpected behavior. See https://v2.hardhat.org/nodejs-versions
+
+
+◇ injected env (4) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+× Help us improve Hardhat with anonymous crash reports & basic usage data? (Y/n) · y
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+Transaction hash: 0x7b241b771cae3be08317e929fd18e18438696aa096ee9141fb5b583fed7351df
+DID: did:uzheth:0x1D64b87f121367A6721d771226A90B9f0e897627
+Robot address: 0x1D64b87f121367A6721d771226A90B9f0e897627
+Public key: 0x040cf2919a26f36976207af1006361ebec51adb7bc865b90da8bac898a762994590206ab75892f7447b6cdeae943bbb1f85529603aa229c40acf92e8d93c8f21c9
+Metadata URI: {"robotModel":"RX-42","manufacturer":"UZH Robotics Lab","serialNumberHash":"0x690aff64390f8b10d8baa7b3e2fbf5bb219177bcd7c6505d2e66f8217f622da5","firmwareVersion":"v2.4.1"}
+DID Document: {
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://w3id.org/security/suites/secp256k1recovery-2020/v2"
+  ],
+  "id": "did:uzheth:0x1D64b87f121367A6721d771226A90B9f0e897627",
+  "controller": "did:uzheth:0x1D64b87f121367A6721d771226A90B9f0e897627",
+  "verificationMethod": [
+    {
+      "id": "did:uzheth:0x1D64b87f121367A6721d771226A90B9f0e897627#keys-1",
+      "type": "EcdsaSecp256k1RecoveryMethod2020",
+      "controller": "did:uzheth:0x1D64b87f121367A6721d771226A90B9f0e897627",
+      "blockchainAccountId": "eip155:70207:0x1D64b87f121367A6721d771226A90B9f0e897627",
+      "publicKeyHex": "0x040cf2919a26f36976207af1006361ebec51adb7bc865b90da8bac898a762994590206ab75892f7447b6cdeae943bbb1f85529603aa229c40acf92e8d93c8f21c9"
+    }
+  ],
+  "authentication": [
+    "did:uzheth:0x1D64b87f121367A6721d771226A90B9f0e897627#keys-1"
+  ],
+  "assertionMethod": [
+    "did:uzheth:0x1D64b87f121367A6721d771226A90B9f0e897627#keys-1"
+  ],
+  "service": [
+    {
+      "id": "did:uzheth:0x1D64b87f121367A6721d771226A90B9f0e897627#metadata",
+      "type": "RobotMetadata",
+      "serviceEndpoint": "{\"robotModel\":\"RX-42\",\"manufacturer\":\"UZH Robotics Lab\",\"serialNumberHash\":\"0x690aff64390f8b10d8baa7b3e2fbf5bb219177bcd7c6505d2e66f8217f622da5\",\"firmwareVersion\":\"v2.4.1\"}"
+    }
+  ],
+  "active": true
+}
+Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c, line 76
+
+(did) G:\UZH\26s\Blockchain\did>npx hardhat run scripts/checkRobot.js --network uzhethpos
+WARNING: You are currently using Node.js v25.8.2, which is not supported by Hardhat. This can lead to unexpected behavior. See https://v2.hardhat.org/nodejs-versions
+
+
+◇ injected env (4) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+× Help us improve Hardhat with anonymous crash reports & basic usage data? (Y/n) · y
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+DID: did:uzheth:0x1D64b87f121367A6721d771226A90B9f0e897627
+exists: true
+active: true
+owner: 0x3e453c9D3B8438CCF8f973A8AB8b3A70B9e1f81c
+publicKey: 0x040cf2919a26f36976207af1006361ebec51adb7bc865b90da8bac898a762994590206ab75892f7447b6cdeae943bbb1f85529603aa229c40acf92e8d93c8f21c9
+metadataURI: {"robotModel":"RX-42","manufacturer":"UZH Robotics Lab","serialNumberHash":"0x690aff64390f8b10d8baa7b3e2fbf5bb219177bcd7c6505d2e66f8217f622da5","firmwareVersion":"v2.4.1"}
+createdAt: 1779712545
+updatedAt: 1779712545
+didDocument: {
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://w3id.org/security/suites/secp256k1recovery-2020/v2"
+  ],
+  "id": "did:uzheth:0x1D64b87f121367A6721d771226A90B9f0e897627",
+  "controller": "did:uzheth:0x1D64b87f121367A6721d771226A90B9f0e897627",
+  "verificationMethod": [
+    {
+      "id": "did:uzheth:0x1D64b87f121367A6721d771226A90B9f0e897627#keys-1",
+      "type": "EcdsaSecp256k1RecoveryMethod2020",
+      "controller": "did:uzheth:0x1D64b87f121367A6721d771226A90B9f0e897627",
+      "blockchainAccountId": "eip155:70207:0x1D64b87f121367A6721d771226A90B9f0e897627",
+      "publicKeyHex": "0x040cf2919a26f36976207af1006361ebec51adb7bc865b90da8bac898a762994590206ab75892f7447b6cdeae943bbb1f85529603aa229c40acf92e8d93c8f21c9"
+    }
+  ],
+  "authentication": [
+    "did:uzheth:0x1D64b87f121367A6721d771226A90B9f0e897627#keys-1"
+  ],
+  "assertionMethod": [
+    "did:uzheth:0x1D64b87f121367A6721d771226A90B9f0e897627#keys-1"
+  ],
+  "service": [
+    {
+      "id": "did:uzheth:0x1D64b87f121367A6721d771226A90B9f0e897627#metadata",
+      "type": "RobotMetadata",
+      "serviceEndpoint": "{\"robotModel\":\"RX-42\",\"manufacturer\":\"UZH Robotics Lab\",\"serialNumberHash\":\"0x690aff64390f8b10d8baa7b3e2fbf5bb219177bcd7c6505d2e66f8217f622da5\",\"firmwareVersion\":\"v2.4.1\"}"
+    }
+  ],
+  "active": true
+}
+
+(did) G:\UZH\26s\Blockchain\did>node robot/issueCredential.js
+◇ injected env (4) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+Saved path: G:\UZH\26s\Blockchain\did\credentials\robot-maintenance-vc.json
+Issuer DID: did:uzheth:0x1D64b87f121367A6721d771226A90B9f0e897627
+Robot address: 0x1D64b87f121367A6721d771226A90B9f0e897627
+Signature: 0x20466cf7aef631ad29e09c32fd0b0d775a64838c269ae2b0433243baf50393f6768c22dfbe38a7e13b3cbafc924dd7fdb1d19210a1b259cb2db5348ef4ac3afb1b
+
+(did) G:\UZH\26s\Blockchain\did>node verifier/verifyCredential.js credentials/robot-maintenance-vc.json
+◇ injected env (4) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+VALID: Credential verified successfully
+issuer DID: did:uzheth:0x1D64b87f121367A6721d771226A90B9f0e897627
+recovered signer: 0x1D64b87f121367A6721d771226A90B9f0e897627
+registry owner: 0x3e453c9D3B8438CCF8f973A8AB8b3A70B9e1f81c
+public key: 0x040cf2919a26f36976207af1006361ebec51adb7bc865b90da8bac898a762994590206ab75892f7447b6cdeae943bbb1f85529603aa229c40acf92e8d93c8f21c9
+metadataURI: {"robotModel":"RX-42","manufacturer":"UZH Robotics Lab","serialNumberHash":"0x690aff64390f8b10d8baa7b3e2fbf5bb219177bcd7c6505d2e66f8217f622da5","firmwareVersion":"v2.4.1"}
+DID active: true
+createdAt: 1779712545
+updatedAt: 1779712545
+DID Document: {
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://w3id.org/security/suites/secp256k1recovery-2020/v2"
+  ],
+  "id": "did:uzheth:0x1D64b87f121367A6721d771226A90B9f0e897627",
+  "controller": "did:uzheth:0x1D64b87f121367A6721d771226A90B9f0e897627",
+  "verificationMethod": [
+    {
+      "id": "did:uzheth:0x1D64b87f121367A6721d771226A90B9f0e897627#keys-1",
+      "type": "EcdsaSecp256k1RecoveryMethod2020",
+      "controller": "did:uzheth:0x1D64b87f121367A6721d771226A90B9f0e897627",
+      "blockchainAccountId": "eip155:70207:0x1D64b87f121367A6721d771226A90B9f0e897627",
+      "publicKeyHex": "0x040cf2919a26f36976207af1006361ebec51adb7bc865b90da8bac898a762994590206ab75892f7447b6cdeae943bbb1f85529603aa229c40acf92e8d93c8f21c9"
+    }
+  ],
+  "authentication": [
+    "did:uzheth:0x1D64b87f121367A6721d771226A90B9f0e897627#keys-1"
+  ],
+  "assertionMethod": [
+    "did:uzheth:0x1D64b87f121367A6721d771226A90B9f0e897627#keys-1"
+  ],
+  "service": [
+    {
+      "id": "did:uzheth:0x1D64b87f121367A6721d771226A90B9f0e897627#metadata",
+      "type": "RobotMetadata",
+      "serviceEndpoint": "{\"robotModel\":\"RX-42\",\"manufacturer\":\"UZH Robotics Lab\",\"serialNumberHash\":\"0x690aff64390f8b10d8baa7b3e2fbf5bb219177bcd7c6505d2e66f8217f622da5\",\"firmwareVersion\":\"v2.4.1\"}"
+    }
+  ],
+  "active": true
+}
+
+(did) G:\UZH\26s\Blockchain\did>npx hardhat run scripts/revokeRobot.js --network uzhethpos
+WARNING: You are currently using Node.js v25.8.2, which is not supported by Hardhat. This can lead to unexpected behavior. See https://v2.hardhat.org/nodejs-versions
+
+
+◇ injected env (4) from .env // tip: ⌘ override existing { override: true }
+× Help us improve Hardhat with anonymous crash reports & basic usage data? (Y/n) · y
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+Transaction hash: 0xc55d23eae01c944babc9c6f4fe76410e4dcdfb58a80dd238d4bdc1d91e7f06d4
+Revoked DID: did:uzheth:0x1D64b87f121367A6721d771226A90B9f0e897627
+DID revoked successfully
+
+(did) G:\UZH\26s\Blockchain\did>node verifier/verifyCredential.js credentials/robot-maintenance-vc.json
+◇ injected env (4) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+INVALID: DID does not exist or is revoked

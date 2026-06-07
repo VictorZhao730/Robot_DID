@@ -1,0 +1,500 @@
+UZH
+Blockchain
+Center
+Blockchain&DLT
+Research Group
+Blockchain Programming Seminar 2026
+Ethereum Proof Of Stake Hands‑On
+Prof. Dr Claudio J. Tessone,
+Syed Muhammad Yasir
+Tao Yan
+Blockchain & Distributed Ledger Technologies Group
+FOR STUDY PURPOSES ONLY
+UZH Blockchain Center
+Faculty of Business, Economics and Informatics
+University of Zurich
+1 Introduction
+In this hands‑on, we will demonstrate how to run our own private Ethereum network based on the Proof of
+Stake consensus (UZH Ethereum PoS), stake some UZHETH, and earn staking rewards.
+Figure 1: UZH Ethereum PoS network and the relation between various components we will implement in these hands‑on.
+Learning objectives for these hands‑on:
+• Setup the execution node for the UZH Ethereum PoS network, using Rust Ethereum (Rust) client.
+• Setup the consensus node for the UZH Ethereum PoS network, using Lighthouse client.
+• Configure our existing Metamask wallet in web browser to connect to one of the public UZH Ethereum
+PoS nodes.
+• Bridge Ether from UZH Ethereum PoW network to UZH Ethereum PoS network.
+• (Optional) Configuring and running validators on the UZH Ethereum PoS network and receiving rewards
+to our Metamask wallet.
+• (Optional) Gracefully exiting validators from UZH Ethereum PoS network.
+2 Installing and running UZH Ethereum node (Linux 64 bit and macOS)
+The following guide assumes you have Homebrew installed on your computer. Additionally, it is advisable to
+install Xcode dev tools (from Appstore) and have the latest update for the Xcode command line tools (check
+software update section in settings, in your Mac).
+2.0.1 Install dependencies
+For dependencies like Xcode and Homebrew, please refer to the technical preparation document. From here
+onward, the dependencies you see are specifically for Ethereum PoS setup.
+1
+curl curl is a command‑line tool used to transfer data from or to a server
+To install it on Mac (assuming you have Homebrew installed and up to date):
+brew install curl
+To install it on Linux:
+sudo apt update
+sudo apt install curl
+expect expect is needed to unbuffer the output of the several programs you will run
+To install it on Mac (assuming you have Homebrew installed and up to date):
+brew install expect
+To install it on Linux:
+sudo apt update
+sudo apt install expect
+jq jq is needed to output some data in a readable, verbose (easy‑to‑understand) form
+To install it on Mac (assuming you have Homebrew installed and up to date):
+brew install jq
+To install it on Linux:
+sudo apt update
+sudo apt install jq
+tmux tmux is needed to run processes in the terminal background
+To install it on Mac (assuming you have Homebrew installed and up to date):
+brew install tmux
+To install it on Linux:
+sudo apt update
+sudo apt install tmux
+zip zip is needed to extract the snapshot file
+To install it on Mac (assuming you have Homebrew installed and up to date):
+brew install zip unzip
+2
+To install it on Linux:
+sudo apt update
+sudo apt-get install zip unzip
+2.1 Installation on Mac
+Simply download the file with the following command(s),
+wget https://gitlab.uzh.ch/syedmuhammad.yasir/uzh-eth-pos/-/raw/main/electra/vm_pos_mac.zip
+OR download the file directly, by clicking the given link below
+vm_pos_mac.zip
+The file is probably going to be downloaded in your ”Downloads” folder, so navigate there and either use the
+file manager on your computer. Make sure to extract the file to your home folder.
+OR use the terminal to navigate to the folder where you downlaoded the file. You can then unzip the file and
+place the vm_pos in your home folder.
+unzip the file and place the vm_pos folder in your home folder. The following command will be helpful on Mac.
+unzip vm_pos_mac.zip -d ~
+2.2 Installation on Linux 64
+Simply download the file from the following link,
+wget https://gitlab.uzh.ch/syedmuhammad.yasir/uzh-eth-pos/-/raw/main/electra/vm_pos_linux.tar
+OR
+download the file directly, by clicking on the given link below
+vm_pos_linux.tar
+The file is probably going to be downloaded in your ”Downloads” folder, so navigate there and either use the
+file manager on your computer to extract the file to your home folder
+OR use the terminal to navigate to the folder where you downlaoded the file. You can then unzip the file and
+place the vm_pos folder in your home folder
+tar -xvf vm_pos_linux.tar -C ~
+3 Setup a Metamask Wallet for UZH Ethereum Proof of Stake (PoS)
+In this section, we will show you how to interface to the Ethereum PoS network. We assume you already have
+a working Metamask wallet from the Ethereum PoW hands on.
+Note that the same wallet address, that you used in Ethereum PoW, can be used for Ethereum PoS network.
+Hence, you open your metamask wallet open and follow the procedure as shown in Figure 2. Newer Metamask
+versions might have slightly different layout, so use common sense and explore the interface a bit to find the
+desired options.
+3
+Figure 2: Your Metamask Interface
+Here, in the ”Add a custom network” section, you fill in the following data:
+• Network Name: UZH_ETH_PoS
+• RPC URL: http://130.60.144.77:8554/
+• Chain Id: 70207
+• Currency Symbol: UZHETHs
+By now, you have connected your wallet to the UZH Ethereum PoS network! You are now ready to configure
+your very own UZH Ethereum PoS instance.
+3.1 Setting up a NEW Wallet ‑ Rewards Wallet
+WARNING: This section is critical to your assignment, so please pay special attention
+First go to Metamask, click name of your account to see a menu. At the end of menu, it will say ”Add account or
+hardware wallet” or something similar. Steps shown in Figure 3
+4
+Figure 3: Creating a rewards wallet ‑ part 1
+Next, select Ethereum account (it might have slightly different wording in different versions of metamask, so
+use some common sense and intuition to pick the correct option)
+Later, you can name your new wallet as ”Rewards Wallet”. These steps are shown below in Figure 4
+Figure 4: Creating a rewards wallet ‑ part 2
+WARNING: From this point onwards, you are NOT supposed to interact with the Rewards Wallet, unless
+specified. Do not send any ether to the Rewards Wallet or do any other activity. Doing so will result in
+your grade being penalized for the forthcoming PoS assignment.
+and then switch back to your previous wallet (press the name of your wallet at the top and choose the wallet
+which you have used so far), the one with which you have done the UZH‑ETH Proof of Work hands‑on with.
+3.2 How to retrieve private key
+WARNING: Pay special attention, you are going to need this step when configuring your validators
+• Open MetaMask and unlock it with your password.
+• Select the account you want to export the key from.
+• Click the three‑dot menu or “Account Details”.
+5
+• Choose “Show Private Key” (label may vary depending on version).
+• Enter your password to confirm.
+• Long‑press the confirmation button.
+• Copy the private key and store it securely somewhere.
+Figure 5: Finding your private key ‑ part 1
+Figure 6: Finding your private key ‑ part 2
+6
+3.3 Transaction Explorer
+Later on, when you start making transactions, please refer to the following link to check the blockchain explorer
+for the PoS network
+http://rpc‑uzhethpos.blockchain‑group.ch:8088/
+https://uzhethss.tryethernal.com/
+4 Exchanging Your PoW Ether for PoS Ether
+NOTE: Please ensure you ONLY have the Metamask wallet extension enabled in your browser. If you have
+other wallet software, the exchange will not work. Also, the exchange will only work if you
+Starting out in a PoS network requires you to have ether on hand. However, as this is an educational exercise
+and everyone will be working on a testnet, a facility is provided to you for exchanging your Proof‑of‑work ether
+to Proof of Stake Ether.
+An oracle will help you exchange your PoW cryptocurrency to PoS cryptocurrency.
+First, enter https://rpc.uzhethw.ifi.uzh.ch/bidirection/ in your address bar, you will see,
+Figure 7: UZH Ethereum PoW to PoS Bridge
+Make sure your Metamask is set to the Proof‑of‑Work network, you can change networks by clicking the
+button to the top left of Metamask and choosing the network (remember, Chain ID is 702 for PoW). You
+will also be prompted by Metamask to connect to the website, approve/accept the prompt.
+7
+Figure 8: choose the PoW network
+Then go back to the page, enter how much ether you want to exchange. The exchange rate is 1 UZHETHPoW
+Ether = 20 UZHETHPoS Ether
+Figure 9: Enter desired PoW Ether amount
+Press Confirm when metamask prompts you for the transaction,
+8
+Figure 10: Approve Transaction
+This will take a few minutes. Later on, you should be able to see an increase in your wallet balance, when you
+switch to the PoS network
+5 Configuring and running UZH Ethereum PoS node
+5.1 For Ubuntu
+After you have downloaded the VM (for ubuntu), you will have to make sure that you place the vm_pos folder in
+the yourhome folder. In case you are unsure, you canfind your home directory by using thefollowing command
+in your command line/terminal;
+echo $HOME
+9
+WARNING: It is imperative that you don’t move this folder. By design, this folder should remain in your
+$HOME folder (where $HOME represents the environment variable for your home directory). A lot of the
+configuration depends on the location of this folder. Therefore, keep the folder in the $HOME directory.
+Navigate to the vm_pos folder,
+cd vm_pos
+first let’s check out the folder name ”precompiled_exes”.
+ls precompiled_exes
+This command will display several executables, all of which will be used in setting up your very own Ethereum
+Proof of Stake node. All these have to be globally accessible by the system. Therefore, to achieve that, you will
+launch
+export PATH=${HOME}/vm_pos/precompiled_exes:$PATH
+This will make all executables globally accessible through the command line. If you ever exit the terminal,
+you need to launch this command again for the executables to be accessible by your terminal
+Now, inside ”vm_pos” folder you will find a lot of files and folders. Everything is more or less pre‑configured,
+so you don’t need to worry yourself with the minute details. Only the most relevant and custom parts of the
+network, which are specific to your own interaction with the network, will be configured by you.
+For the next step, you must determine your public IP. You can use the following command to list all IPs of your
+machine.
+One way to do that is to use our script,
+./ip_test.sh --reth 130.60.144.77:8554 --beacon 130.60.144.77:8100
+This should give you your publicly‑accessible ip, which you require for the next step. If not then you can see
+some alternative methods below,
+You will need to use ifconfig for that, in Linux you have to install it by using,
+sudo apt install net-tools
+Then,
+ifconfig | grep "inet " | awk '{print $2}'
+You might have to experiment a bit, but if you are connecting from UZH premises, the IP with the pattern like
+10.xx.xx.xxx is your public IP.
+Alternatively, you can try an alternative command, but this one only works if you are sure that your public IP is
+tethered to the interface en0 (might not be true for all users)
+ifconfig getifaddr en0
+then run the following script
+./set_ext_ip.sh
+It will prompt you to enter the IP of your system, make sure you enter the correct IP, otherwise your geth and
+beacon nodes might not properly work with the network.
+10
+Next, you have to set a funding wallet address for your beacon and validator client, you should use the same
+wallet address as the one used in PoW hands‑on.
+Run the following script,
+./set_wallet_address.sh
+it will ask for your wallet address, copy paste the address from Metamask and it will be automatically assigned
+for your clients.
+Next, you need to get the snapshot from our servers, so that you can easily sync to the network within a few
+minutes. Make sure, this file is downloaded in the vm_pos folder!
+wget https://gitlab.uzh.ch/syedmuhammad.yasir/uzh-eth-pos/-/raw/main/electra/sync.zip
+once the snapshot has been downloaded, you will see a sync.zip file in your vm_pos folder. If you downloaded
+it elsewhere, please move it to the vm_pos folder.
+Before launching the following command, make sure you have installed zip in your system!
+./0_snapshot_sync.sh
+This will place the contents of the sync.zip file in the appropriate folder, so your client can read the data and
+sync quickly.
+tmux -f ./tmux.conf new-session -s geth
+In this tmux session, navigate to the vm_pos folder (if you are not already there) and launch the next script to
+launch reth,
+./1_geth_launch.sh
+This will start reth, which is the execution layer/execution client in the PoS system. Now, jump out of the tmux
+session by pressing ”CTRL+B+A” (Control+B+A for Mac) on your keyboard. Then open another tmux session,
+tmux -f ./tmux.conf new-session -s beacon
+from inside the tmux session, navigate to the vm_pos folder (cd $HOME/vm_pos, if you are not already there)
+and launch the script to start lighthouse,
+./2_beacon_launch.sh
+This will start lighthouse, which is the consensus layer/consensus client in the PoS system. Now, jump out of
+the tmux session by pressing ”CTRL+B+A” (Control+B+A for Mac) on your keyboard. Then open another tmux
+session,
+tmux -f ./tmux.conf new-session -s validator
+This session is for validators. Right now you dont need to run anything, as the instructions for this will be dis‑
+cussed in the subsequent section (Configuring Validators). For now, jump out of this tmux session by pressing
+”CTRL+B+A” (Control+B+A for Mac).
+5.2 For Mac
+After you have downloaded the VM folder, you will have to make sure that you place the vm_pos folder in the
+your home folder. In case you are unsure, you can find your home directory by using the following command
+in your command line/terminal;
+11
+$ echo $HOME
+WARNING: You have to move this folder to you home directory. By design, this folder should remain in
+your $HOME folder (where $HOME represents the environment variable for your home directory). The
+running of the scripts and files depends on the location of this folder. Therefore, keep the folder in the
+$HOME directory.
+Navigate to the vm_pos folder,
+cd vm_pos
+first let’s check out the folder name ”precompiled_exes”.
+ls precompiled_exes
+This command will display several executables, all of which will be used in setting up your very own Ethereum
+Proof of Stake node. All these have to be globally accessible by the system. Therefore, to achieve that, you will
+launch
+export PATH=${HOME}/vm_pos/precompiled_exes:$PATH
+This will make all executables globally accessible through the command line. If you ever exit the terminal,
+you need to launch this command again for the executables to be accessible by your terminal
+Now, inside ”vm_pos” folder you will find a lot of files and folders. Everything is more or less pre‑configured,
+so you don’t need to worry yourself with the minute details. Only the most relevant and custom parts of the
+network, which are specific to your own interaction with the network, will be configured by you.
+For the next step, you must determine your public IP. You can use the following command to list all IPs of your
+machine.
+One way to do that is to use our script,
+./ip_test.sh --reth 130.60.144.77:8554 --beacon 130.60.144.77:8100
+This should give you your publicly‑accessible ip, which you require for the next step. If not then you can see
+some alternative methods below,
+ifconfig | grep "inet " | awk '{print $2}'
+You might have to experiment a bit, but if you are connecting from UZH premises, the IP with the pattern like
+10.xx.xx.xxx is your public IP.
+Alternatively, you can try an alternative command, but this one only works if you are sure that your public IP is
+tethered to the interface en0 (might not be true for all users)
+ipconfig getifaddr en0
+then run the following script
+./set_ext_ip.sh
+It will prompt you to enter the IP of your system, make sure you enter the correct IP, otherwise your geth and
+beacon nodes might not properly work with the network.
+Next, you have to set a funding wallet address for your beacon and validator client, you should use the same
+wallet address as the one used in PoW hands‑on. Run the following script,
+12
+./set_wallet_address.sh
+it will ask for your wallet address, copy paste the address from Metamask and it will be automatically assigned
+for your clients.
+Next, you need to get the snapshot from our servers, so that you can easily sync to the network within a few
+minutes. Make sure, this file is downloaded in the vm_pos folder!
+wget https://gitlab.uzh.ch/syedmuhammad.yasir/uzh-eth-pos/-/raw/main/electra/sync.zip
+once the snapshot has been downloaded, you will see a sync.zip file in your vm_pos folder. If you downloaded
+it elsewhere, please move it to the vm_pos folder.
+Before launching the following command, make sure you have installed zip in your system!
+./0_snapshot_sync.sh
+This will place the contents of the sync.zip file in the appropriate folder, so your client can read the data and
+sync quickly.
+NOTE: The following commands will entail launching a few executables (namely, the execution client,
+consensus client and the validator client.). Sometimes, MacOS might flag the running of the executable
+files as security risks, but you have to go to your security settings and allow these applications to run as
+they are safe.
+tmux -f ./tmux.conf new-session -s geth
+In this tmux session, navigate to the vm_pos folder (if you are not already there) and launch the next script to
+launch geth,
+Note : before running this, make sure you have the ’expect’ package installed! Only after you are absolutely
+certain that the expect package is installed, then proceed with the following; (for future reference, the script
+should check if expect is installed or not)
+./1_geth_launch.sh
+This might make your computer give some security warnings. Please be assured that these programs are safe
+to run and allow all security settings so that these programs can properly run on your computer.
+This will start geth, which is the execution layer/execution client in the PoS system. Now, jump out of the tmux
+session by pressing ”CTRL+B+A” (Control+B+A for Mac) on your keyboard. Then open another tmux session,
+tmux -f ./tmux.conf new-session -s beacon
+from inside the tmux session, navigate to the vm_pos folder (cd $HOME/vm_pos, if you are not already there)
+and launch the script to start lighthouse,
+./2_beacon_launch.sh
+This will start lighthouse, which is the consensus layer/consensus client in the PoS system. Now, jump out of
+the tmux session by pressing ”CTRL+B+A” (Control+B+A for Mac) on your keyboard. Then open another tmux
+session,
+tmux -f ./tmux.conf new-session -s validator
+13
+This session is for validators. Right now you dont need to run anything, as the instructions for this will be dis‑
+cussed in the subsequent section (Configuring Validators). For now, jump out of this tmux session by pressing
+”CTRL+B+A” (Control+B+A for Mac).
+5.3 tmux commands
+Please note, if you want to jump back into an already existing tmux session, the commands are as follows
+tmux attach -t session_name
+tmux attach -t geth
+tmux attach -t beacon
+tmux attach -t validator
+to check your existing tmux sessions,
+tmux ls
+NOTE: The following content is optional. The main goal of this hands‑on session is to run and sync
+your Ethereum PoS node, enabling you to issue transactions during later development. The next section
+explains how to stake and earn rewards in Ethereum PoS. If you’re interested, please take a look. Feel
+free to ask any questions.
+6 Configuring Validators (optional)
+Validator configuration is slightlymore detailed and henceforth, requires afew steps dedicated to the procedure
+in its own separate section.
+Before you can start, you will require a validatormnemonic (can be generatedfrom https://iancoleman.io/bip39/).
+The process is detailed in the following mini section.
+6.1 Generating Mnemonics
+First, go to https://iancoleman.io/bip39/, you will see
+14
+Figure 11: Mnemonic Generation Page
+Now, you can choose the number of words, it is up to you to let it remain as default or change the number from
+drop‑down
+When you press the Generate button, you will see a lot of outputs,
+Figure 12: Outputs Generated by the BIP‑tool
+The first output is your mnemonic
+15
+Figure 13: Mnemonic for Validators
+WARNING: It is imperative that you keep your mnemonic safe as you might need it later! Make sure to
+save it, back it up somewhere!
+The mnemonic you generate here, exclusively belongs to your set of validators. This mnemonic generates your
+validator secret (or private key of your validator). It is different from the mnemonic that you generate for creat‑
+ing a wallet address.
+6.2 Validator Configuration
+In the ”vm_pos” folder, there’s a folder called ”validator_cfg”, to which you must navigate to,
+cd validator_cfg
+Inside this folder, you will see numbered scripts (0, 1, 2 etc). These have to be executed in order. Execute the
+first script,
+./0_prompt_user.sh
+This will prompt you to enter some information. Figure 14 gives you obvious hints on what should be the ap‑
+propriate input for each prompt.
+Figure 14: Validator Inputs
+• mnemonic ‑ you generated it from https://iancoleman.io/bip39/ in Section 6.1
+• funding wallet ‑ enter the wallet address of the same wallet you used in the Ethereum PoW hands‑on.
+You can obtain it from Metamask
+• funding wallet private key ‑ enter the private key of the wallet address that you just entered above. You
+can obtain it from Metamask, refer to Section 3.2 on how to obtain your private key
+16
+• rewards wallet address ‑ enter the rewards wallet address, you created it in Section 3.1
+Then run the subsequent script, which will generate validator keys
+./1_generate_val_keys.sh
+The next script will place validator keys in the appropriatefolders ($HOME/vm_pos/beacon/secrets and $HOME‑
+/vm_pos/beacon/validators)
+./2_arrange_keys.sh
+Now that the validator keys have been placed in the correct places ‑ you have to run the validator client. There‑
+fore, jump back into the validator tmux session you created earlier,
+tmux attach -t validator
+then, inside tmux, make sure you are in the $HOME/vm_pos/ folder
+cd $HOME/vm_pos/
+and launch the validator script
+./3_validator_launch.sh
+this will start the validator client. Jump out of this session, ”CTRL+B+A” (Control+B+A for Mac).
+Now, you have to make validator activation deposits, in order to enable your validator to participate in Proof‑
+of‑Stake consensus. For this, go to ”validator_cfg” folder in the ”vm_pos” folder
+cd $HOME/vm_pos/validator_cfg
+and then source the necessary variables, to prepare for deposit
+source 3_deposit_config_SOURCE_THIS.sh
+then launch the script to build the deposit(s)
+./4_build_deposit.sh
+Answer yes to the prompt,
+and then finally, execute the script that actually makes the deposits for the validators,
+./5_make_deposits.sh
+Answer yes (just write the letter ”y”) and wait for the deposits to be completed.
+WARNING: Validator Deposit can take anywhere around 30 min to even 1 hour (or maybe a bit more, like
+2 hours, depending upon how many other validators are enqueued). You will have to wait and be patient
+here. You cannot proceed without your validator deposit procedure being completed. After your valida‑
+tor deposit completes, to earn rewards, your computer MUST be active and running the reth, lighthouse
+and validator clients, otherwise you won’t earn any rewards. Your validator needs to participate in the
+network’s decision making processes to be eligible for rewards.
+Note that each validator requires 32 UZHETH per validator. You only need to run ONE validator for this hands‑on
+and for the forthcoming assignment. Do not attempt to increase the number of validators, it has no benefit and
+will actually complicate your work. A file called deposit_log.txtis created inside the ”validator_cfg” folder, you
+can check it to see the transaction hash of your deposit transaction.
+17
+cat deposit_log.txt
+Be sure to check the transaction hash in the provided block explorer in Section 3.3. You should be able to see
+the hash in the explorer, it is the only way to confirm your deposit transaction has gone through and is valid.
+WARNING: You cannot proceed with the hands‑on without a valid deposit transaction!
+From this point onwards, you now have to wait for your validator to activate before trying any of the
+following steps. Section 7 contains information on how to verify if your validator is active.
+6.3 Active validators and Rewards
+When your validator is not in blockchain, but have submitted deposit,
+Figure 15: awaiting activation, as you are not active yet
+When your validator is detected by blockchain,
+Figure 16: Validator detected by blockchain
+When your validator is active, you see logs like this,
+18
+Figure 17: Active Validator Logs
+the following logs show how you earn the reward, either by attesting
+Figure 18: attestation confirmation
+or by producing blocks,
+Figure 19: blocks produced
+7 Interacting with Beacon Chain and Exiting Validators ((optional))
+To interact with the consensus layer and check your validators, you need to know what your validator keys are.
+You can find your validator keys by running the following commands
+cd $HOME/vm_pos/beacon/validators/
+ls
+running the above commands will give you an overview of all the content in the validators folder, it might look
+like this,
+Figure 20: Validator Names
+Take note of the folders starting with 0x.., all these folders are actually named after your validator keys. Each
+’0x..’ name is a validator key and can be used to check their status on the beacon chain.
+Once your validators have entered the chain, you can check their status by running the following, (Note that you
+have to make sure your consensus layer and your execution layer are fully synced before querying the beacon
+chain, to get the correct information)
+curl -s http://0.0.0.0:8005/eth/v1/beacon/states/head/validators/VALIDATOR_KEY | jq -r
+A sample output is shown below,
+19
+Figure 21: Validator Details
+7.1 Validator Exit
+WARNING: If you do not complete this step, your assignment is at risk of being penalized. Please make
+sure to pay extra attention to this particular part of the hands‑on!
+For Validator Exit, you don’t have to attempt this in the class room, as you will need to run your validators for
+some time, possibly several hours after they have been activated. This is because you need to stake and earn
+some ether rewards in order to attempt the assignment.
+However, eventually, you do need to exit your validators from the network.
+To do that, you have to use the ethdo module provided along with the other executables (be sure to run the
+export command first, as shown in section 5)
+Make sure your reth and lighthouse clients are fully synced, before running the following command!
+ethdo validator exit --mnemonic="YOUR_VALIDATOR_MNEMONIC" --validator="VALIDATOR_PUBLIC_KEY"
+--connection "http://YOUR_PUBLIC_IP:8005"
+This step should explain why it is absolutely vital to keep your validator mnemonic, generated earlier, safe and
+preserved somewhere. After you run the above command, your validator will start the proceedings to exit the
+chain
+Remember, if you have multiple validators, you need to run this command several times, as each command is
+targeted at ONE validator (whose public key you are providing).
+Official Documentation
+for more commands, check out
+• Reth JSON‑RPC & CLI docs: reth.rs
+• Beacon API specification (Lighthouse, Prysm, Teku, Nimbus): ethereum.github.io/beacon‑APIs
+20
+Addendum
+Known Issue 1: eth2‑val‑tools
+For some of you, the script 1_generate_keys.sh might not work.
+You will need to install Go (https://go.dev/doc/install)
+Once you have installed go on your computer, do the following
+So do the following,
+cd $HOME/vm_pos/precompiled_exes
+rm eth2-val-tools
+Then stay in the same folder,
+mkdir compiled
+cd compiled
+git clone https://github.com/protolambda/eth2-val-tools
+cd eth2-val-tools
+go build -o ./bin/eth2-val-tools
+cp eth2-val-tools ../../..
+cd ../../..
+or simply navigate to precompiled_exes folder
+cd $HOME/vm_pos/precompiled_exes
+and just try
+./eth2-val-tools
+If it gives some appropriate output, just run the export command again
+export PATH=${HOME}/vm_pos/precompiled_exes:$PATH
+and resume the hands on.
+Known Issue 2: Older Macbooks
+Older Macbooks will not be able to work with the newer expect package.
+In that case, you can modify the scripts so that it does not use the expect library
+Simply, modify the 3 files; 1_geth_launch.sh, 2_beacon_launch.sh and 3_validator_launch.sh, such that you
+remove the unbuffer command at the start of the script, so that;
+unbuffer reth
+...
+...
+by removing the unbuffer command, will look like:
+reth
+...
+...
+do the same for beacon and validator scripts and try running again.
+21
+Known Issue 3: Newer Macbooks
+Newer Macbooks will have their own issues, especially with the provided geth version. You will probably get a
+”bad cpu” error
+You will probably have to compile the software on your own machine then. Tell the TAs about the problematic
+software and we will give you the github links so that you can compile the software on your own computers.
+22

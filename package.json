@@ -1,0 +1,38 @@
+{
+  "name": "robot-did-project",
+  "version": "1.0.0",
+  "description": "Decentralized digital identity prototype for robots on UZHETH PoS.",
+  "main": "hardhat.config.js",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy": "hardhat run scripts/deploy.js --network uzhethpos",
+    "register": "hardhat run scripts/registerRobot.js --network uzhethpos",
+    "check": "hardhat run scripts/checkRobot.js --network uzhethpos",
+    "revoke": "hardhat run scripts/revokeRobot.js --network uzhethpos",
+    "issue": "node issuer/issueCredentialForRobot.js",
+    "issue:self": "node robot/issueSelfSignedCredential.js",
+    "issue:controller": "node controller/issueDelegatedCredential.js",
+    "issue:issuer": "node issuer/issueCredentialForRobot.js",
+    "verify": "node verifier/verifyCredential.js credentials/RobotSensorDataCredential.json",
+    "ui": "node -e \"console.log('Open ui/index.html in your browser')\""
+  },
+  "keywords": [
+    "did",
+    "verifiable-credentials",
+    "robots",
+    "hardhat",
+    "ethers"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^6.1.0",
+    "hardhat": "^2.26.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.9.6",
+    "dotenv": "^17.2.3",
+    "ethers": "^6.15.0"
+  }
+}

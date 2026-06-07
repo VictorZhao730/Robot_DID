@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Robot DID Visualizer</title>
+    <link rel="stylesheet" href="./css/styles.css?v=19" />
+  </head>
+  <body>
+    <main>
+      <h1>Robot DID Visualizer</h1>
+      <p>
+        Visualizes the decentralized robot identity flow: NFT-backed uniqueness,
+        DID registry state, DID Resolver output, and VC verification.
+      </p>
+      <div class="demo-guide" aria-label="Presentation flow">
+        <span class="demo-step"><span class="demo-step-number">1</span>Setup</span>
+        <span class="demo-step"><span class="demo-step-number">2</span>Create Robot</span>
+        <span class="demo-step"><span class="demo-step-number">3</span>Manage DID</span>
+        <span class="demo-step"><span class="demo-step-number">4</span>Register Issuer</span>
+        <span class="demo-step"><span class="demo-step-number">5</span>Issue VC</span>
+        <span class="demo-step"><span class="demo-step-number">6</span>Verify</span>
+      </div>
+
+      <section class="flow-section">
+        <h2 class="flow-section-title">Setup &amp; Platform Admin</h2>
+        <p class="flow-section-desc">Connect to UZHETH and set the RobotDIDRegistry address.</p>
+        <div class="grid">
+          <div class="card">
+            <h3 class="card-title">Network &amp; Contracts</h3>
+            <label for="rpcUrl">UZHETH PoS RPC URL</label>
+            <input id="rpcUrl" value="http://130.60.144.77:8554/" />
+
+            <label for="registryAddress">RobotDIDRegistry address</label>
+            <input
+              id="registryAddress"
+              value="0x9281FdeDfE234b9028801dfe822F6B20a11fCC2B"
+              placeholder="0x..."
+            />
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">NFT Mint Permission</h3>
+            <p>Platform admin: who may mint new robot NFTs.</p>
+
+            <label for="minterRoleAddress">Minter role address</label>
+            <input id="minterRoleAddress" placeholder="0x..." />
+            <button id="checkMinterRole" class="secondary">Check MINTER_ROLE</button>
+            <button id="grantMinterRole">Grant MINTER_ROLE</button>
+            <button id="revokeMinterRole" class="secondary">Revoke MINTER_ROLE</button>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">Issuer Registry Admin</h3>
+            <p>
+              Register/revoke issuers and grant credential roles. Requires
+              <code>DEFAULT_ADMIN_ROLE</code> on CredentialIssuerRegistry (deployer has it initially).
+            </p>
+
+            <label for="issuerRegistryAdminAddress">Admin role address</label>
+            <input id="issuerRegistryAdminAddress" placeholder="0x..." />
+            <button id="checkIssuerRegistryAdmin" class="secondary">
+              Check DEFAULT_ADMIN_ROLE
+            </button>
+            <button id="grantIssuerRegistryAdmin">Grant DEFAULT_ADMIN_ROLE</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="flow-section">
+        <h2 class="flow-section-title">Robot Identity</h2>
+        <p class="flow-section-desc">
+          Generate a robot device wallet, then mint its NFT and register its DID in one flow.
+          Minter and NFT owner may be different MetaMask accounts.
+        </p>
+        <div class="grid">
+          <div class="card">
+            <h3 class="card-title">Robot Device Wallet</h3>
+            <p>Cryptographic identity for self-signed VCs. Separate from NFT / DID management owner.</p>
+
+            <button id="generateRobotWallet">Generate Robot Wallet</button>
+
+            <label for="generatedRobotPrivateKey">Robot private key</label>
+            <input id="generatedRobotPrivateKey" />
+
+            <label for="generatedRobotAddress">Robot address</label>
+            <input id="generatedRobotAddress" />
+
+            <label for="generatedRobotDid">Robot DID</label>
+            <input id="generatedRobotDid" />
+
+            <pre id="registrationOutput">Generate a robot wallet first.</pre>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">Mint NFT + Register DID</h3>
+            <p class="card-hint">
+              MetaMask is the NFT owner (and minter by default). Optionally enter a separate minter private key when minting on behalf of another owner.
+            </p>
+
+            <label for="robotNftOwnerAddress">NFT owner address</label>
+            <input
+              id="robotNftOwnerAddress"
+              value="0x3e453c9D3B8438CCF8f973A8AB8b3A70B9e1f81c"
+              placeholder="Leave as-is or empty — defaults to MetaMask account"
+            />
+            <label for="robotRegistrationMinterPrivateKey">Minter private key (optional)</label>
+            <input
+              id="robotRegistrationMinterPrivateKey"
+              placeholder="Only when minter ≠ MetaMask owner"
+            />
+            <button id="mintAndRegisterRobot">Connect MetaMask + Mint &amp; Register DID</button>
+
+            <div id="mintRegisterProgress" class="mint-register-progress" hidden>
+              <div class="mint-register-progress-header">
+                <span class="mint-register-progress-title">Progress</span>
+                <button id="clearMintRegisterProgress" type="button" class="mint-register-clear">
+                  Clear
+                </button>
+              </div>
+              <div class="mint-register-phase">
+                <h4 class="mint-register-phase-title">Step 1 — Mint NFT</h4>
+                <ol class="mint-register-step-list" id="mintRegisterPhase1Steps"></ol>
+              </div>
+              <div class="mint-register-phase">
+                <h4 class="mint-register-phase-title">Step 2 — Build &amp; sign challenge</h4>
+                <ol class="mint-register-step-list" id="mintRegisterPhase2Steps"></ol>
+              </div>
+              <div class="mint-register-phase">
+                <h4 class="mint-register-phase-title">Step 3 — Verify &amp; register</h4>
+                <ol class="mint-register-step-list" id="mintRegisterPhase3Steps"></ol>
+              </div>
+            </div>
+
+            <pre id="robotRegistrationOutput">Generate a robot wallet first, then run mint + register.</pre>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">Robots Browser</h3>
+            <p id="robotsSummary">Click Show Robots to list minted robot NFTs.</p>
+            <button id="showRobots">Show Robots</button>
+            <label class="inline-option">
+              <input id="hideDeactivatedRobots" type="checkbox" />
+              Hide deactivated bots
+            </label>
+            <div id="robotsOutput" class="robot-list"></div>
+            <pre id="robotDetailsOutput">Click a robot NFT avatar to select it. Click again to deselect.</pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="flow-section">
+        <h2 class="flow-section-title">Selected Robot — DID Management</h2>
+        <p class="flow-section-desc">
+          Actions below apply to the robot selected in Robots Browser. DID management owner is always the current Robot NFT owner (transfers with the NFT).
+        </p>
+        <div class="grid">
+          <div class="card">
+            <h3 class="card-title">DID Status &amp; Lifecycle</h3>
+
+            <div class="card-subsection">
+              <h4 class="card-subsection-title">Inspect</h4>
+              <label for="did">Robot DID</label>
+              <input id="did" placeholder="did:uzheth:robot:1" />
+              <button id="checkDid">Lookup DID Manually</button>
+
+              <button id="showSelectedRobotDid">Show Selected Robot DID Details</button>
+              <button id="showSelectedRobotTimeline" class="secondary">Show On-chain Event Timeline</button>
+              <button id="showPermissionMatrix" class="secondary">Show Permission Matrix</button>
+            </div>
+
+            <div class="card-subsection">
+              <h4 class="card-subsection-title">Update Key</h4>
+              <p class="card-subsection-desc">Owner or controller with key-rotation permission.</p>
+              <label for="rotatedRobotPrivateKey">New robot private key</label>
+              <input id="rotatedRobotPrivateKey" placeholder="0x..." />
+              <button id="generateRotationKey" class="secondary">Generate New Rotation Key</button>
+              <button id="rotateSelectedRobotKey">Rotate Selected Robot Key</button>
+            </div>
+
+            <div class="card-subsection">
+              <h4 class="card-subsection-title">Transfer Robot NFT</h4>
+              <p class="card-subsection-desc">DID management rights follow the NFT owner automatically after transfer.</p>
+              <label for="robotNftTransferAddress">New NFT owner address</label>
+              <input id="robotNftTransferAddress" placeholder="0x..." />
+              <button id="transferSelectedRobotNft" class="secondary">Transfer Selected Robot NFT</button>
+            </div>
+
+            <div class="card-subsection card-subsection-danger">
+              <h4 class="card-subsection-title">Lifecycle</h4>
+              <p class="card-subsection-desc">
+                <strong>Suspend</strong> blocks new VC issuance but keeps historical VCs valid.
+                <strong>Revoke</strong> permanently deactivates the DID (all VCs fail).
+              </p>
+              <button id="suspendSelectedRobot" class="secondary">Suspend Selected Robot DID</button>
+              <button id="unsuspendSelectedRobot" class="secondary">Unsuspend Selected Robot DID</button>
+              <button id="revokeSelectedRobot" class="secondary">Revoke Selected Robot DID (permanent)</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">DID Controllers</h3>
+            <p>Delegate per-robot DID control to specific keys.</p>
+
+            <label for="controllerAddress">DID controller address</label>
+            <input id="controllerAddress" placeholder="0x..." />
+            <label class="inline-option">
+              <input id="controllerCanRotateKey" type="checkbox" checked />
+              Controller can rotate DID key
+            </label>
+            <label class="inline-option">
+              <input id="controllerCanRevokeCredential" type="checkbox" checked />
+              Controller can revoke credentials
+            </label>
+            <label class="inline-option">
+              <input id="controllerCanAssert" type="checkbox" />
+              Controller can assert/sign credentials
+            </label>
+            <button id="addDidController">Add DID Controller</button>
+            <button id="updateDidControllerPermissions" class="secondary">
+              Update Controller Permissions
+            </button>
+            <button id="removeDidController" class="secondary">Remove DID Controller</button>
+            <pre id="controllerOutput">Select a robot in Robots Browser, then add or update controllers here.</pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="flow-section">
+        <h2 class="flow-section-title">Trusted Issuers</h2>
+        <p class="flow-section-desc">Register external issuer DIDs and grant credential-type roles (global trust layer).</p>
+        <div class="grid">
+          <div class="card">
+            <h3 class="card-title">Issuer DID &amp; Roles</h3>
+            <p class="card-hint">
+              Register / revoke issuer and grant roles require MetaMask with
+              <code>DEFAULT_ADMIN_ROLE</code> on CredentialIssuerRegistry (see Setup).
+            </p>
+
+            <label for="issuerRoleAddress">Issuer address</label>
+            <input id="issuerRoleAddress" placeholder="0x..." />
+
+            <div class="issuer-role-types">
+              <span class="issuer-role-types-label">Credential types (select one or more)</span>
+              <div class="issuer-role-options">
+                <label class="issuer-role-option">
+                  <input
+                    type="checkbox"
+                    name="issuerRoleCredentialTypes"
+                    value="RobotMaintenanceCredential"
+                  />
+                  Maintenance
+                </label>
+                <label class="issuer-role-option">
+                  <input
+                    type="checkbox"
+                    name="issuerRoleCredentialTypes"
+                    value="RobotManufacturingCredential"
+                  />
+                  Manufacturing
+                </label>
+                <label class="issuer-role-option">
+                  <input
+                    type="checkbox"
+                    name="issuerRoleCredentialTypes"
+                    value="RobotSafetyInspectionCredential"
+                  />
+                  Safety Inspection
+                </label>
+                <label class="issuer-role-option">
+                  <input
+                    type="checkbox"
+                    name="issuerRoleCredentialTypes"
+                    value="RobotOperationLicenseCredential"
+                  />
+                  Operation License
+                </label>
+              </div>
+            </div>
+
+            <label for="issuerProfileName">Name</label>
+            <input id="issuerProfileName" placeholder="e.g. UZH Safety Office" />
+            <label for="issuerProfileType">Type</label>
+            <input id="issuerProfileType" placeholder="e.g. SafetyInspector, Manufacturer" />
+            <label for="issuerProfileRemark">Remark</label>
+            <input id="issuerProfileRemark" placeholder="Optional notes" />
+            <button id="registerIssuerDid" class="secondary">Register Active Issuer DID</button>
+            <button id="revokeIssuerDid" class="secondary">Revoke Issuer DID</button>
+            <button id="checkIssuerRole" class="secondary">Check Issuer Role</button>
+            <button id="grantIssuerRole">Grant Issuer Role</button>
+
+            <label for="roleMatrixAddresses">Role Matrix addresses</label>
+            <textarea
+              id="roleMatrixAddresses"
+              placeholder="One address per line, or comma-separated"
+            ></textarea>
+            <button id="showRoleMatrix" class="secondary">Show Role Matrix</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="flow-section">
+        <h2 class="flow-section-title">Credentials — Issue &amp; Verify</h2>
+        <p class="flow-section-desc">
+          Issue self-signed, controller-delegated, or external issuer VCs, then verify or revoke on-chain.
+          Actor payer: sign and anchor via MetaMask. Owner payer: sign via MetaMask; enter NFT owner private key when selected.
+        </p>
+        <div class="grid">
+          <div class="card">
+            <h3 class="card-title">Robot Self-Signed VC</h3>
+            <p>Robot proves data or logs it produced itself.</p>
+            <p class="card-hint">
+              Optional robot private key avoids MetaMask for signing. Uses the generated robot key if this field is empty.
+              Owner anchor gas uses the owner private key below.
+            </p>
+
+            <label for="selfSignedRobotPrivateKey">Robot private key (optional)</label>
+            <input
+              id="selfSignedRobotPrivateKey"
+              placeholder="Leave empty to sign via MetaMask (robot key account)"
+            />
+            <label for="selfSignedCredentialType">Credential type</label>
+            <select id="selfSignedCredentialType">
+              <option value="RobotSensorDataCredential">Sensor Data</option>
+              <option value="RobotHeartbeatCredential">Heartbeat</option>
+              <option value="RobotOperationalLogCredential">Operational Log</option>
+            </select>
+            <label for="selfSignedValidDays">Valid days</label>
+            <input id="selfSignedValidDays" type="number" value="1" />
+            <fieldset class="anchor-gas-mode">
+              <legend>Anchor gas payer</legend>
+              <div class="anchor-gas-options">
+                <label class="anchor-gas-option">
+                  <input type="radio" name="selfSignedAnchorGasMode" value="offchain" checked />
+                  Off-chain only
+                </label>
+                <label class="anchor-gas-option">
+                  <input type="radio" name="selfSignedAnchorGasMode" value="owner" />
+                  Owner
+                </label>
+                <label class="anchor-gas-option">
+                  <input type="radio" name="selfSignedAnchorGasMode" value="actor" />
+                  Robot
+                </label>
+              </div>
+              <div
+                class="anchor-owner-key-panel"
+                data-anchor-gas-panel="selfSignedAnchorGasMode"
+                hidden
+              >
+                <label for="selfSignedAnchorOwnerPrivateKey">NFT owner private key</label>
+                <input
+                  id="selfSignedAnchorOwnerPrivateKey"
+                  placeholder="Owner pays anchor gas"
+                />
+              </div>
+            </fieldset>
+            <div
+              class="anchor-consumption-section"
+              data-anchor-gas-panel="selfSignedAnchorGasMode"
+              hidden
+            >
+              <label for="selfSignedConsumptionMode">Anchor consumption policy</label>
+              <select id="selfSignedConsumptionMode">
+                <option value="0">Unlimited use</option>
+                <option value="1">Limited use</option>
+              </select>
+              <div
+                class="anchor-consumption-limited-panel"
+                data-consumption-mode-select="selfSignedConsumptionMode"
+                hidden
+              >
+                <label for="selfSignedConsumptionMaxUses">Max uses</label>
+                <input id="selfSignedConsumptionMaxUses" type="number" value="1" min="1" />
+              </div>
+            </div>
+            <button id="issueSelfSignedCredential">Sign Self-Signed VC</button>
+            <pre id="selfSignedCredentialOutput">Generated credential will appear here.</pre>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">Controller-Delegated VC</h3>
+            <p>Authorized operator records logs on behalf of the selected robot.</p>
+            <p>Controller must have assertion permission on the robot DID.</p>
+            <p class="card-hint">
+              Optional controller private key avoids MetaMask for signing. Owner anchor gas uses the owner private key below.
+            </p>
+
+            <label for="controllerDelegatedPrivateKey">Controller private key (optional)</label>
+            <input
+              id="controllerDelegatedPrivateKey"
+              placeholder="Leave empty to sign via MetaMask"
+            />
+            <label for="controllerDelegatedCredentialType">Credential type</label>
+            <select id="controllerDelegatedCredentialType">
+              <option value="RobotOperationalLogCredential">Operational Log</option>
+              <option value="RobotMaintenanceLogCredential">Maintenance Log</option>
+            </select>
+            <label for="controllerDelegatedValidDays">Valid days</label>
+            <input id="controllerDelegatedValidDays" type="number" value="7" />
+            <fieldset class="anchor-gas-mode">
+              <legend>Anchor gas payer</legend>
+              <div class="anchor-gas-options">
+                <label class="anchor-gas-option">
+                  <input type="radio" name="controllerDelegatedAnchorGasMode" value="offchain" checked />
+                  Off-chain only
+                </label>
+                <label class="anchor-gas-option">
+                  <input type="radio" name="controllerDelegatedAnchorGasMode" value="owner" />
+                  Owner
+                </label>
+                <label class="anchor-gas-option">
+                  <input type="radio" name="controllerDelegatedAnchorGasMode" value="actor" />
+                  Controller
+                </label>
+              </div>
+              <div
+                class="anchor-owner-key-panel"
+                data-anchor-gas-panel="controllerDelegatedAnchorGasMode"
+                hidden
+              >
+                <label for="controllerDelegatedAnchorOwnerPrivateKey">NFT owner private key</label>
+                <input
+                  id="controllerDelegatedAnchorOwnerPrivateKey"
+                  placeholder="Owner pays anchor gas"
+                />
+              </div>
+            </fieldset>
+            <div
+              class="anchor-consumption-section"
+              data-anchor-gas-panel="controllerDelegatedAnchorGasMode"
+              hidden
+            >
+              <label for="controllerDelegatedConsumptionMode">Anchor consumption policy</label>
+              <select id="controllerDelegatedConsumptionMode">
+                <option value="0">Unlimited use</option>
+                <option value="1">Limited use</option>
+              </select>
+              <div
+                class="anchor-consumption-limited-panel"
+                data-consumption-mode-select="controllerDelegatedConsumptionMode"
+                hidden
+              >
+                <label for="controllerDelegatedConsumptionMaxUses">Max uses</label>
+                <input id="controllerDelegatedConsumptionMaxUses" type="number" value="1" min="1" />
+              </div>
+            </div>
+            <button id="issueControllerDelegatedCredential">Sign Controller-Delegated VC</button>
+            <pre id="controllerDelegatedCredentialOutput">Generated credential will appear here.</pre>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">External Issuer VC</h3>
+            <p>Independent authority certifies formal maintenance, safety, or licensing.</p>
+            <p class="card-hint">
+              Optional issuer private key avoids MetaMask for signing. Owner anchor gas uses the owner private key below.
+            </p>
+
+            <label for="credentialIssuerPrivateKey">Issuer private key (optional)</label>
+            <input
+              id="credentialIssuerPrivateKey"
+              placeholder="Leave empty to sign via MetaMask"
+            />
+            <label for="credentialType">Credential type</label>
+            <select id="credentialType">
+              <option value="RobotMaintenanceCredential">Maintenance</option>
+              <option value="RobotSafetyInspectionCredential">Safety Inspection</option>
+              <option value="RobotManufacturingCredential">Manufacturing</option>
+              <option value="RobotOperationLicenseCredential">Operation License</option>
+            </select>
+            <label for="credentialValidDays">Valid days</label>
+            <input id="credentialValidDays" type="number" value="180" />
+            <fieldset class="anchor-gas-mode">
+              <legend>Anchor gas payer</legend>
+              <div class="anchor-gas-options">
+                <label class="anchor-gas-option">
+                  <input type="radio" name="externalIssuerAnchorGasMode" value="offchain" checked />
+                  Off-chain only
+                </label>
+                <label class="anchor-gas-option">
+                  <input type="radio" name="externalIssuerAnchorGasMode" value="owner" />
+                  Owner
+                </label>
+                <label class="anchor-gas-option">
+                  <input type="radio" name="externalIssuerAnchorGasMode" value="actor" />
+                  Issuer
+                </label>
+              </div>
+              <div
+                class="anchor-owner-key-panel"
+                data-anchor-gas-panel="externalIssuerAnchorGasMode"
+                hidden
+              >
+                <label for="externalIssuerAnchorOwnerPrivateKey">NFT owner private key</label>
+                <input
+                  id="externalIssuerAnchorOwnerPrivateKey"
+                  placeholder="Owner pays anchor gas"
+                />
+              </div>
+            </fieldset>
+            <div
+              class="anchor-consumption-section"
+              data-anchor-gas-panel="externalIssuerAnchorGasMode"
+              hidden
+            >
+              <label for="externalIssuerConsumptionMode">Anchor consumption policy</label>
+              <select id="externalIssuerConsumptionMode">
+                <option value="0">Unlimited use</option>
+                <option value="1">Limited use</option>
+              </select>
+              <div
+                class="anchor-consumption-limited-panel"
+                data-consumption-mode-select="externalIssuerConsumptionMode"
+                hidden
+              >
+                <label for="externalIssuerConsumptionMaxUses">Max uses</label>
+                <input id="externalIssuerConsumptionMaxUses" type="number" value="1" min="1" />
+              </div>
+            </div>
+            <button id="issueCredential">Sign Issuer VC</button>
+            <pre id="externalIssuerCredentialOutput">Generated credential will appear here.</pre>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">Verify &amp; Revoke VC</h3>
+            <label for="credentialFile">VC JSON file</label>
+            <input id="credentialFile" type="file" accept="application/json,.json" />
+
+            <label for="credentialText">Or paste VC JSON manually</label>
+            <textarea id="credentialText" placeholder='{"@context":["https://www.w3.org/2018/credentials/v1"], ...}'></textarea>
+
+            <label for="maxPublishDelaySeconds">Max publish delay (seconds)</label>
+            <input
+              id="maxPublishDelaySeconds"
+              type="number"
+              value="86400"
+              min="0"
+              title="When anchored: require issuedAt &lt;= publishedAt &lt;= issuedAt + delay"
+            />
+            <p class="card-hint">
+              Anchored credentials must satisfy
+              <code>issuedAt &lt;= publishedAt &lt;= issuedAt + maxPublishDelay</code>.
+              Unanchored credentials skip this check.
+            </p>
+
+            <button id="verifyCredential">Verify Credential</button>
+            <button id="verifyAndConsumeCredential" class="secondary">
+              Verify + Consume Credential On-chain
+            </button>
+            <button id="revokeCredential" class="secondary">Revoke Credential On-chain</button>
+            <p class="status" id="verificationStatus">No credential verified yet.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="flow-section">
+        <h2 class="flow-section-title">On-chain Query Results</h2>
+        <p class="flow-section-desc">Pop-up panels for registry state, DID documents, timelines, and permission matrices.</p>
+        <div class="grid">
+          <div class="card result-panel" id="registryPanel">
+            <div class="panel-header">
+              <h3 class="card-title">DID Registry State</h3>
+              <div class="panel-actions">
+                <button
+                  type="button"
+                  class="panel-view-toggle secondary"
+                  data-panel-view-toggle="registryPanel"
+                  hidden
+                >
+                  Show Raw JSON
+                </button>
+                <button class="close-panel" data-close-panel="registryPanel">Close</button>
+              </div>
+            </div>
+            <div id="registryOutput" class="query-panel-content">No registry query yet.</div>
+          </div>
+
+          <div class="card result-panel" id="didDocumentPanel">
+            <div class="panel-header">
+              <h3 class="card-title">DID Resolver Output</h3>
+              <div class="panel-actions">
+                <button
+                  type="button"
+                  class="panel-view-toggle secondary"
+                  data-panel-view-toggle="didDocumentPanel"
+                  hidden
+                >
+                  Show Raw JSON
+                </button>
+                <button class="close-panel" data-close-panel="didDocumentPanel">Close</button>
+              </div>
+            </div>
+            <div id="didDocumentOutput" class="query-panel-content">No DID resolution yet.</div>
+          </div>
+
+          <div class="card result-panel" id="timelinePanel">
+            <div class="panel-header">
+              <h3 class="card-title">On-chain Event Timeline</h3>
+              <div class="panel-actions">
+                <button
+                  type="button"
+                  class="panel-view-toggle secondary"
+                  data-panel-view-toggle="timelinePanel"
+                  hidden
+                >
+                  Show Raw JSON
+                </button>
+                <button class="close-panel" data-close-panel="timelinePanel">Close</button>
+              </div>
+            </div>
+            <div id="timelineOutput" class="query-panel-content">No timeline query yet.</div>
+          </div>
+
+          <div class="card result-panel" id="matrixPanel">
+            <div class="panel-header">
+              <h3 class="card-title">Permission / Role Matrix</h3>
+              <div class="panel-actions">
+                <button
+                  type="button"
+                  class="panel-view-toggle secondary"
+                  data-panel-view-toggle="matrixPanel"
+                  hidden
+                >
+                  Show Raw JSON
+                </button>
+                <button class="close-panel" data-close-panel="matrixPanel">Close</button>
+              </div>
+            </div>
+            <div id="matrixOutput" class="query-panel-content">No matrix query yet.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card result-panel" id="verificationPanel">
+        <div class="panel-header">
+          <h3 class="card-title">Credential Verification Details</h3>
+          <div class="panel-actions">
+            <button
+              type="button"
+              class="panel-view-toggle secondary"
+              data-panel-view-toggle="verificationPanel"
+              hidden
+            >
+              Show Raw JSON
+            </button>
+            <button class="close-panel" data-close-panel="verificationPanel">Close</button>
+          </div>
+        </div>
+        <div id="verificationOutput" class="query-panel-content">No verification output yet.</div>
+      </section>
+
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.15.0/dist/ethers.umd.min.js"></script>
+    <!-- core -->
+    <script src="./js/core/abi.js"></script>
+    <script src="./js/core/config.js"></script>
+    <script src="./js/core/did.js"></script>
+    <!-- ui -->
+    <script src="./js/ui/display.js"></script>
+    <script src="./js/ui/mint-register-ui.js"></script>
+    <script src="./js/ui/panelRender.js"></script>
+    <script src="./js/ui/panel-helpers.js"></script>
+    <script src="./js/ui/format-helpers.js"></script>
+    <script src="./js/ui/matrices.js"></script>
+    <script src="./js/ui/robots-browser.js"></script>
+    <!-- credentials -->
+    <script src="./js/credentials/on-chain-anchor.js"></script>
+    <script src="./js/credentials/anchor-timing.js"></script>
+    <script src="./js/credentials/build.js"></script>
+    <script src="./js/credentials/issue.js"></script>
+    <script src="./js/credentials/verify.js"></script>
+    <!-- registry -->
+    <script src="./js/registry/connections.js"></script>
+    <script src="./js/registry/nft-admin.js"></script>
+    <script src="./js/registry/issuer-admin.js"></script>
+    <script src="./js/registry/controllers.js"></script>
+    <script src="./js/registry/did-queries.js"></script>
+    <script src="./js/registry/robot-lifecycle.js"></script>
+    <script src="./js/registry/mint-register.js"></script>
+    <script src="./js/app.js"></script>
+  </body>
+</html>
