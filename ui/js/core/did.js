@@ -40,31 +40,54 @@ function didFromAddress(address) {
   return `${DID_METHOD_PREFIX}${ethers.getAddress(address)}`;
 }
 
-function didFromRobotTokenId(tokenId) {
-  return `${ROBOT_DID_PREFIX}${String(tokenId)}`;
+function didFromRobotTokenId(tokenId, chainId, nftAddress) {
+  if (tokenId === undefined || chainId === undefined || !nftAddress) {
+    throw new Error(
+      "didFromRobotTokenId(tokenId, chainId, nftAddress) requires all three arguments"
+    );
+  }
+  const token = String(tokenId);
+  if (!/^\d+$/.test(token) || (token.length > 1 && token.startsWith("0"))) {
+    throw new Error("Invalid robot token ID");
+  }
+  const normalizedNft = ethers.getAddress(nftAddress).toLowerCase();
+  return `${ROBOT_DID_PREFIX}${String(chainId)}:${normalizedNft}:${token}`;
+}
+
+async function resolveRobotDid(registry, tokenId) {
+  return registry.robotDidForToken(tokenId);
 }
 
 const REGISTER_CHALLENGE_TYPE = "RegisterRobotKey";
+const ROBOT_DID_BODY_PATTERN = /^(\d+):(0x[a-fA-F0-9]{40}):(\d+)$/;
 
-function tokenIdFromRobotDid(did) {
+function parseRobotDid(did) {
   if (!isRobotDid(did)) {
-    throw new Error("Expected robot DID format did:uzheth:robot:<tokenId>");
+    throw new Error(
+      "Expected robot DID format did:uzheth:robot:<chainId>:0x<nftAddress>:<tokenId>"
+    );
   }
-  const tokenId = did.slice(ROBOT_DID_PREFIX.length);
-  if (!/^\d+$/.test(tokenId)) {
-    throw new Error("Invalid robot token ID in DID");
+  const match = did.slice(ROBOT_DID_PREFIX.length).match(ROBOT_DID_BODY_PATTERN);
+  if (!match) {
+    throw new Error(`Invalid robot DID format: ${did}`);
   }
+  const tokenId = match[3];
   if (tokenId.length > 1 && tokenId.startsWith("0")) {
     throw new Error("Robot DID token ID must be canonical decimal form");
   }
-  return tokenId;
+  return {
+    chainId: match[1],
+    nftAddress: ethers.getAddress(match[2]),
+    tokenId,
+  };
+}
+
+function tokenIdFromRobotDid(did) {
+  return parseRobotDid(did).tokenId;
 }
 
 function validateRobotDid(did) {
-  if (!isRobotDid(did)) {
-    throw new Error("Expected robot DID format did:uzheth:robot:<tokenId>");
-  }
-  tokenIdFromRobotDid(did);
+  parseRobotDid(did);
   return did;
 }
 
@@ -127,7 +150,14 @@ async function isRobotKeyAuthorizedAt(registry, did, robotKeyAddress, issuedAtSe
 
 function buildDidDocument(did, record) {
   const methodId = verificationMethodId(did);
+  const parsed = isRobotDid(did) ? parseRobotDid(did) : null;
   const robotTokenId = record.robotTokenId.toString();
+  const chainId = parsed?.chainId ?? String(UZHETH_CHAIN_ID);
+  const robotNftAddress =
+    record.robotNftAddress ??
+    parsed?.nftAddress ??
+    document.getElementById("robotNftAddress")?.value?.trim() ??
+    null;
   const signingAddress = publicKeyToAddress(record.publicKey);
   const controllers =
     record.controllers && record.controllers.length > 0
@@ -143,11 +173,15 @@ function buildDidDocument(did, record) {
     });
   }
 
-  services.push({
-    id: `${did}#robot-asset`,
-    type: "RobotIdentityNFT",
-    serviceEndpoint: `eip155:${UZHETH_CHAIN_ID}/erc721/${robotTokenId}`,
-  });
+  if (robotNftAddress) {
+    services.push({
+      id: `${did}#robot-asset`,
+      type: "RobotIdentityNFT",
+      serviceEndpoint: `eip155:${chainId}/erc721:${ethers
+        .getAddress(robotNftAddress)
+        .toLowerCase()}/${robotTokenId}`,
+    });
+  }
 
   return {
     "@context": [
@@ -161,7 +195,7 @@ function buildDidDocument(did, record) {
         id: methodId,
         type: "EcdsaSecp256k1RecoveryMethod2020",
         controller: did,
-        blockchainAccountId: `eip155:${UZHETH_CHAIN_ID}:${signingAddress}`,
+        blockchainAccountId: `eip155:${chainId}:${signingAddress}`,
         publicKeyHex: record.publicKey,
       },
     ],
@@ -170,6 +204,10 @@ function buildDidDocument(did, record) {
     capabilityInvocation: [methodId],
     service: services,
     robotTokenId,
+    robotNftAddress: robotNftAddress
+      ? ethers.getAddress(robotNftAddress).toLowerCase()
+      : undefined,
+    chainId,
     active: record.active,
   };
 }

@@ -249,8 +249,8 @@ document.getElementById("generateRobotWallet").addEventListener("click", () => {
   document.getElementById("generatedRobotDid").value =
     selectedRobot?.activeDID ||
     (selectedRobot?.tokenId
-      ? didFromRobotTokenId(selectedRobot.tokenId)
-      : "Assigned after NFT registration (did:uzheth:robot:<tokenId>)");
+      ? selectedRobot.activeDID
+      : "Assigned after NFT registration (did:uzheth:robot:<chainId>:0x<nft>:<tokenId>)");
   if (selectedRobot?.activeDID) {
     document.getElementById("did").value = selectedRobot.activeDID;
   }

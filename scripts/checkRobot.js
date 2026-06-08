@@ -28,6 +28,7 @@ async function main() {
   }
 
   const record = await registry.getDID(did);
+  const robotNftAddress = await registry.robotIdentityNFT();
   const historyLength = await registry.getKeyHistoryLength(did);
   const keyHistory = [];
   for (let index = 0; index < Number(historyLength); index += 1) {
@@ -49,6 +50,7 @@ async function main() {
         publicKey: record.publicKey,
         metadataURI: record.metadataURI,
         robotTokenId: record.robotTokenId,
+        robotNftAddress,
         active: record.active,
       }),
       null,

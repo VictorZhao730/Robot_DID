@@ -26,6 +26,47 @@ function parseIssuerMetadata(metadataURI) {
   }
 }
 
+function isVerifiableCredential(value) {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const types = Array.isArray(value.type) ? value.type : [value.type];
+  return types.includes("VerifiableCredential") && Boolean(value.credentialSubject);
+}
+
+function parseCredentialJsonInput(text) {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    throw new Error("Select a credential JSON file or paste credential JSON");
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(trimmed);
+  } catch (error) {
+    const commentIdx = trimmed.search(/\n\s*\/\//);
+    const candidate = commentIdx >= 0 ? trimmed.slice(0, commentIdx).trim() : trimmed;
+    try {
+      parsed = JSON.parse(candidate);
+    } catch (_retryError) {
+      throw new Error(
+        `Invalid credential JSON: ${error.message}. Paste only the VerifiableCredential object (not anchor output).`
+      );
+    }
+  }
+
+  if (parsed?.credential && isVerifiableCredential(parsed.credential)) {
+    return parsed.credential;
+  }
+
+  if (isVerifiableCredential(parsed)) {
+    return parsed;
+  }
+
+  throw new Error("JSON does not look like a VerifiableCredential");
+}
+
 function formatIssuerProfile(issuerRecord) {
   const parsed = parseIssuerMetadata(issuerRecord.metadataURI);
   const profileObject =

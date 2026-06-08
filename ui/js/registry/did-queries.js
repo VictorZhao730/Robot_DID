@@ -12,6 +12,7 @@ async function getRegistryRecord() {
     registry.getDID(did),
     registry.getControllers(did),
   ]);
+  const robotNftAddress = await registry.robotIdentityNFT();
   const controllerDetails = await Promise.all(
     controllers.map(async (controller) => ({
       controller,
@@ -29,6 +30,7 @@ async function getRegistryRecord() {
     publicKey: record.publicKey,
     metadataURI: record.metadataURI,
     robotTokenId: record.robotTokenId,
+    robotNftAddress,
     active,
     suspended: record.suspended,
     suspendedAt: record.suspendedAt.toString(),
@@ -88,6 +90,7 @@ async function listRobots() {
         tokenId: tokenId.toString(),
         owner,
         activeDID: activeDID || null,
+        robotNftAddress: nftAddress,
         metadata,
         mintTransaction: event.transactionHash,
       };
@@ -167,11 +170,6 @@ async function getSelectedRobotTimeline() {
   }
 
   const dids = new Set();
-  const canonicalDid = didFromRobotTokenId(selectedRobot.tokenId);
-  if (canonicalDid) {
-    dids.add(canonicalDid);
-  }
-
   const activeDidOnChain = await registry.activeDIDForRobotToken(tokenId);
   if (typeof activeDidOnChain === "string" && activeDidOnChain.length > 0) {
     dids.add(activeDidOnChain);
@@ -186,12 +184,12 @@ async function getSelectedRobotTimeline() {
     latestBlock
   );
   for (const event of registeredEvents) {
-    const did = didFromRobotTokenId(event.args.robotTokenId);
+    const did = await registry.robotDidForToken(event.args.robotTokenId);
     if (did) {
       dids.add(did);
     }
     pushEvent(event, "DIDRegistered", {
-      did: did || canonicalDid || selectedRobot.activeDID || "(unknown DID)",
+      did: did || selectedRobot.activeDID || "(unknown DID)",
       owner: event.args.owner,
       tokenId: event.args.robotTokenId.toString(),
     });

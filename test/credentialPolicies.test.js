@@ -1,4 +1,5 @@
 const { expect } = require("chai");
+const { didFromRobotTokenId } = require("../lib/didUzheth");
 const {
   ISSUANCE_MODEL,
   detectIssuanceModel,
@@ -35,10 +36,15 @@ describe("credentialPolicies", function () {
   });
 
   it("detects controller-delegated issuance when issuer differs from subject", function () {
+    const robotDid = didFromRobotTokenId(
+      1,
+      70207,
+      "0x00000000000000000000000000000000000000b1"
+    );
     const credential = {
       issuer: "did:uzheth:0x0000000000000000000000000000000000000002",
       credentialSubject: {
-        id: "did:uzheth:robot:1",
+        id: robotDid,
       },
     };
     const policy = getCredentialPolicy("RobotMaintenanceLogCredential");
@@ -48,7 +54,11 @@ describe("credentialPolicies", function () {
   });
 
   it("validates heartbeat schema", function () {
-    const robotDid = "did:uzheth:robot:1";
+    const robotDid = didFromRobotTokenId(
+      1,
+      70207,
+      "0x00000000000000000000000000000000000000b1"
+    );
     const result = verifyCredentialTypeAndSchema({
       type: ["VerifiableCredential", "RobotHeartbeatCredential"],
       issuer: robotDid,

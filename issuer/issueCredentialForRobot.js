@@ -15,6 +15,7 @@ const {
   getCredentialPolicy,
   supportsIssuanceModel,
 } = require("../lib/credentialPolicies");
+const { maybeAnchorCredential } = require("../lib/issueAnchor");
 
 function requireEnv(name) {
   const value = process.env[name];
@@ -88,6 +89,14 @@ async function main() {
   console.log("Issuer DID:", issuerDid);
   console.log("Subject robot DID:", subjectDid);
   console.log("Credential type:", credentialType);
+
+  const anchorResult = await maybeAnchorCredential(credential, {
+    actorPrivateKeyEnv: "ISSUER_PRIVATE_KEY",
+  });
+  if (anchorResult) {
+    console.log("On-chain anchor completed");
+    console.log(JSON.stringify(anchorResult, null, 2));
+  }
 }
 
 main().catch((error) => {

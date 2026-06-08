@@ -3,7 +3,7 @@ const { ethers } = require("hardhat");
 const {
   canonicalize,
   credentialStatusHash,
-  didFromRobotTokenId,
+  robotDidFromRegistry,
   signRegisterChallenge,
   verificationMethodId,
 } = require("../lib/didUzheth");
@@ -35,7 +35,7 @@ describe("verifyCredentialCore", function () {
     );
     await registry.waitForDeployment();
 
-    const did = didFromRobotTokenId(robotTokenId);
+    const did = await robotDidFromRegistry(registry, robotTokenId);
     const challenge = await signRegisterChallenge(robotWallet, did, publicKey, robotWallet.address);
     await registry.registerDID(
       publicKey,

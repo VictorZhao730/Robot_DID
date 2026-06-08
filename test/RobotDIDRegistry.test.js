@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const {
-  didFromRobotTokenId,
+  robotDidFromRegistry,
   signRegisterChallenge,
 } = require("../lib/didUzheth");
 
@@ -49,15 +49,20 @@ describe("RobotDIDRegistry", function () {
     robotTokenId,
     { publicKey: pk = publicKey, robotKeyAddress, robotSigner }
   ) {
-    const did = didFromRobotTokenId(robotTokenId);
+    const did = await robotDidFromRegistry(registry, robotTokenId);
     const signer = robotSigner || owner;
     const challenge = await signRegisterChallenge(signer, did, pk, robotKeyAddress);
     return registry.connect(owner).registerDID(pk, robotKeyAddress, metadataURI, robotTokenId, challenge.signature);
   }
 
   it("registers a stable robot DID with robot key challenge signature", async function () {
-    const { registry, owner, robotTokenId } = await deployRegistryFixture();
-    const did = didFromRobotTokenId(robotTokenId);
+    const { registry, owner, robotTokenId, robotNFT } = await deployRegistryFixture();
+    const did = await robotDidFromRegistry(registry, robotTokenId);
+    const network = await ethers.provider.getNetwork();
+    expect(did).to.match(/^did:uzheth:robot:\d+:0x[a-f0-9]{40}:\d+$/);
+    expect(did).to.equal(
+      `did:uzheth:robot:${network.chainId}:${(await robotNFT.getAddress()).toLowerCase()}:${robotTokenId}`
+    );
 
     await expect(
       registerRobot(registry, owner, robotTokenId, { robotKeyAddress: owner.address })
@@ -80,7 +85,7 @@ describe("RobotDIDRegistry", function () {
 
   it("rejects registration without valid robot key signature", async function () {
     const { registry, owner, robotTokenId, otherAccount } = await deployRegistryFixture();
-    const did = didFromRobotTokenId(robotTokenId);
+    const did = await robotDidFromRegistry(registry, robotTokenId);
     const wrongChallenge = await signRegisterChallenge(
       otherAccount,
       did,
@@ -97,7 +102,7 @@ describe("RobotDIDRegistry", function () {
 
   it("suspends issuance while keeping DID active", async function () {
     const { registry, owner, robotTokenId } = await deployRegistryFixture();
-    const did = didFromRobotTokenId(robotTokenId);
+    const did = await robotDidFromRegistry(registry, robotTokenId);
 
     await registerRobot(registry, owner, robotTokenId, { robotKeyAddress: owner.address });
     await expect(registry.suspendDID(did)).to.emit(registry, "DIDSuspended");
@@ -111,7 +116,7 @@ describe("RobotDIDRegistry", function () {
 
   it("keeps suspension-window issuance invalid after unsuspend", async function () {
     const { registry, owner, robotTokenId } = await deployRegistryFixture();
-    const did = didFromRobotTokenId(robotTokenId);
+    const did = await robotDidFromRegistry(registry, robotTokenId);
 
     await registerRobot(registry, owner, robotTokenId, { robotKeyAddress: owner.address });
     await registry.suspendDID(did);
@@ -137,7 +142,7 @@ describe("RobotDIDRegistry", function () {
 
   it("configures consumption on anchor and consumes single-use credentials once", async function () {
     const { registry, owner, robotTokenId } = await deployRegistryFixture();
-    const did = didFromRobotTokenId(robotTokenId);
+    const did = await robotDidFromRegistry(registry, robotTokenId);
     const credentialHash = ethers.keccak256(ethers.toUtf8Bytes("single-use"));
 
     await registerRobot(registry, owner, robotTokenId, { robotKeyAddress: owner.address });
@@ -150,7 +155,7 @@ describe("RobotDIDRegistry", function () {
 
   it("supports limited consumption with maxUses greater than 1", async function () {
     const { registry, owner, robotTokenId } = await deployRegistryFixture();
-    const did = didFromRobotTokenId(robotTokenId);
+    const did = await robotDidFromRegistry(registry, robotTokenId);
     const credentialHash = ethers.keccak256(ethers.toUtf8Bytes("limited-use"));
 
     await registerRobot(registry, owner, robotTokenId, { robotKeyAddress: owner.address });

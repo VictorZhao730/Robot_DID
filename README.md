@@ -4,7 +4,7 @@
 
 This project is a Hardhat-based prototype for decentralized digital identity and VC-inspired credentials for robots on the UZHETH PoS test network.
 
-Each physical robot is represented by a `RobotIdentityNFT` (ERC-721). It receives a stable `did:uzheth:robot:<tokenId>` identifier, registers device keys in an on-chain registry, and can issue signed JSON credentials that third parties verify independently. **Management ownership** (NFT holder) is separated from **operational signing** (robot device key). Verification policy is **equivalent** across the web UI (`ui/js/`), CLI verifier (`lib/`), and automated tests.
+Each physical robot is represented by a `RobotIdentityNFT` (ERC-721). It receives a stable, globally scoped identifier `did:uzheth:robot:<chainId>:<nftContract>:<tokenId>`, registers device keys in an on-chain registry, and can issue signed JSON credentials that third parties verify independently. **Management ownership** (NFT holder) is separated from **operational signing** (robot device key). Verification policy is **equivalent** across the web UI (`ui/js/`), CLI verifier (`lib/`), and automated tests.
 
 **Technical scope:** project-specific `did:uzheth` method and canonical JSON credentials — not a full W3C DID resolver, JSON-LD, JWS, or VC-JWT stack. Signatures use **EIP-191** (`signMessage` / `verifyMessage`) over a Keccak256 digest of canonical JSON (register challenge uses a separate `keccak256(abi.encode("RegisterRobotKey", ...))` digest).
 
@@ -20,7 +20,7 @@ Each physical robot is represented by a `RobotIdentityNFT` (ERC-721). It receive
 | `scripts/` | Deploy and registry operations |
 | `robot/`, `controller/`, `issuer/` | CLI credential issuance |
 | `verifier/` | CLI credential verification |
-| `test/` | Contract and verification tests (52 passing) |
+| `test/` | Contract and verification tests (53 passing) |
 
 Only `RobotDIDRegistry` needs to be configured in the UI or CLI verifier; linked NFT and issuer registry addresses are resolved on-chain.
 
@@ -29,8 +29,12 @@ Only `RobotDIDRegistry` needs to be configured in the UI or CLI verifier; linked
 Robot DIDs are stable and bound to the NFT token ID:
 
 ```text
-did:uzheth:robot:<tokenId>
+did:uzheth:robot:<chainId>:<nftContract>:<tokenId>
 ```
+
+Example: `did:uzheth:robot:70207:0x4db5ef3b22a0d6d3e05ef3be80710c78e576c152:1`
+
+The DID string embeds the EVM chain ID and the `RobotIdentityNFT` contract address so the same token ID on a different chain or collection cannot collide. Within one registry deployment, `robotDidForToken()` derives this string from `block.chainid`, the immutable NFT contract reference, and the token ID.
 
 Controllers and external issuers use address-based DIDs:
 
@@ -67,17 +71,32 @@ Edit `.env` with funded keys and `REGISTRY_ADDRESS` after deployment. See [Envir
 
 | Variable | Used by | Description |
 |----------|---------|-------------|
-| `PRIVATE_KEY` | Deploy, register, revoke | Registry owner / tx signer |
-| `ROBOT_PRIVATE_KEY` | Register, self-signed issue | Robot device key |
-| `CONTROLLER_PRIVATE_KEY` | Controller issue | Operator with assertion permission |
-| `ISSUER_PRIVATE_KEY` | External issuer issue | Registered issuer wallet |
+| `PRIVATE_KEY` | Deploy, registry tx, anchor (owner), consume | Registry owner / default tx signer |
+| `ROBOT_PRIVATE_KEY` | Register, self-signed issue, anchor (actor) | Robot device key |
+| `CONTROLLER_PRIVATE_KEY` | Controller issue, anchor (actor) | Operator with assertion permission |
+| `ISSUER_PRIVATE_KEY` | External issuer issue, anchor (actor) | Registered issuer wallet |
 | `UZHETH_POS_RPC_URL` | On-chain scripts, verifier | Default: `http://130.60.144.77:8554/` |
-| `REGISTRY_ADDRESS` | Register, check, issue, verify | `RobotDIDRegistry` address |
-| `ROBOT_DID` | Check, revoke, self-signed issue | e.g. `did:uzheth:robot:1` |
+| `REGISTRY_ADDRESS` | All registry scripts | `RobotDIDRegistry` address |
+| `ROBOT_DID` | Check, lifecycle, self-signed issue | e.g. `did:uzheth:robot:70207:0x<nft>:1` (from `register` output) |
+| `ROBOT_TOKEN_ID` | NFT transfer | Alternative to `ROBOT_DID` for token lookup |
 | `SUBJECT_ROBOT_DID` | Controller issue | Target robot DID |
 | `CREDENTIAL_SUBJECT_DID` | External issuer issue | Target robot DID |
-| `CREDENTIAL_TYPE` | Issue scripts | See [Credential types](#credential-types) |
+| `CREDENTIAL_FILE` | Anchor, consume, revoke credential | Path to credential JSON |
+| `CREDENTIAL_TYPE` | Issue scripts, issuer grant | See [Credential types](#credential-types) |
 | `CREDENTIAL_VALID_DAYS` | Issue scripts | Override policy default validity |
+| `MAX_PUBLISH_DELAY_SECONDS` | Verifier | Anchor backdating tolerance (default `86400`) |
+| `ANCHOR_GAS_MODE` | Issue / anchor | `offchain` (default), `owner`, or `actor` |
+| `ANCHOR_CONSUMPTION_MODE` | Issue / anchor | `unlimited` (default) or `limited` |
+| `ANCHOR_MAX_USES` | Issue / anchor | Required when mode is `limited` |
+| `NEW_ROBOT_PRIVATE_KEY` | Key rotation | New device key private key |
+| `NFT_TRANSFER_TO` | NFT transfer | New management owner address |
+| `CONTROLLER_ADDRESS` | Controller management | Controller wallet |
+| `CONTROLLER_ACTION` | Controller management | `add`, `update`, or `remove` |
+| `CONTROLLER_PERMISSIONS` | Controller add/update | Bitmask or flags (default `7` = all) |
+| `MINTER_ADDRESS` | NFT admin scripts | Address for `MINTER_ROLE` checks/grants |
+| `ISSUER_ADDRESS` | Issuer scripts | External issuer wallet |
+| `ISSUER_PROFILE_NAME` | Register issuer | Display name (or use `ISSUER_METADATA` JSON) |
+| `ISSUER_REGISTRY_ADMIN_ADDRESS` | Issuer admin grant | Grant `DEFAULT_ADMIN_ROLE` |
 
 ## UZHETH PoS Network Info
 
@@ -97,12 +116,12 @@ Reference for all CLI operations. Set variables in `.env` before running network
 
 ### Install, compile, and test
 
-Build the project and run the 52 automated tests locally before deploying.
+Build the project and run the 53 automated tests locally before deploying.
 
 ```bash
 npm install
 npm run compile          # or: npx hardhat compile
-npm test                 # or: npx hardhat test  (52 tests)
+npm test                 # or: npx hardhat test  (53 tests)
 npx hardhat clean
 npx hardhat test test/RobotDIDRegistry.test.js
 npx hardhat test test/verifyCredentialCore.test.js
@@ -124,10 +143,24 @@ Shorthand wrappers around the Hardhat and Node scripts below.
 npm run deploy           # deploy to uzhethpos
 npm run register         # mint NFT + registerDID
 npm run check            # print DID state
+npm run suspend          # suspendDID
+npm run unsuspend        # unsuspendDID
+npm run rotate           # updatePublicKey (NEW_ROBOT_PRIVATE_KEY)
+npm run transfer:nft     # transfer RobotIdentityNFT
+npm run controller       # add/update/remove controller
 npm run revoke           # revokeDID
-npm run issue:self         # robot self-signed VC
+npm run minter:check     # check MINTER_ROLE
+npm run minter:grant     # grant MINTER_ROLE
+npm run minter:revoke    # revoke MINTER_ROLE
+npm run issuer:register  # register external issuer
+npm run issuer:grant     # grant issuer credential-type role(s)
+npm run issuer:revoke    # deactivate issuer
+npm run issue:self         # robot self-signed VC (+ optional anchor)
 npm run issue:controller   # controller-delegated VC
 npm run issue:issuer       # external issuer VC
+npm run anchor           # anchor existing credential JSON
+npm run consume          # consumeCredential on-chain
+npm run revoke:credential  # revokeCredential hash
 npm run verify           # verify sample credential
 npm run ui               # reminder to open web UI
 ```
@@ -142,7 +175,18 @@ Deploy order: `RobotIdentityNFT` → `CredentialIssuerRegistry` → `RobotDIDReg
 npx hardhat run scripts/deploy.js --network uzhethpos
 npx hardhat run scripts/registerRobot.js --network uzhethpos
 npx hardhat run scripts/checkRobot.js --network uzhethpos
+npx hardhat run scripts/suspendRobot.js --network uzhethpos
+npx hardhat run scripts/unsuspendRobot.js --network uzhethpos
+npx hardhat run scripts/rotateRobotKey.js --network uzhethpos
+npx hardhat run scripts/transferRobotNft.js --network uzhethpos
+npx hardhat run scripts/manageController.js --network uzhethpos
 npx hardhat run scripts/revokeRobot.js --network uzhethpos
+npx hardhat run scripts/grantMinterRole.js --network uzhethpos
+npx hardhat run scripts/registerIssuer.js --network uzhethpos
+npx hardhat run scripts/grantIssuerRole.js --network uzhethpos
+npx hardhat run scripts/anchorCredential.js --network uzhethpos credentials/RobotSensorDataCredential.json
+npx hardhat run scripts/consumeCredential.js --network uzhethpos credentials/RobotSensorDataCredential.json
+npx hardhat run scripts/revokeCredential.js --network uzhethpos credentials/RobotSensorDataCredential.json
 ```
 
 After deploy, set `REGISTRY_ADDRESS`. After register, set `ROBOT_DID` from script output.
@@ -151,11 +195,24 @@ After deploy, set `REGISTRY_ADDRESS`. After register, set `ROBOT_DID` from scrip
 
 Creates signed JSON under `credentials/<CREDENTIAL_TYPE>.json`. Set `CREDENTIAL_TYPE` and the subject DID as required by each model.
 
+Optional anchoring (same semantics as the web UI):
+
+| Variable | Values |
+|----------|--------|
+| `ANCHOR_GAS_MODE` | `offchain` (default), `owner` (`PRIVATE_KEY` pays gas), `actor` (signing key pays gas) |
+| `ANCHOR_CONSUMPTION_MODE` | `unlimited` or `limited` |
+| `ANCHOR_MAX_USES` | e.g. `1` for single-use when limited |
+
 ```bash
 node robot/issueSelfSignedCredential.js
 node controller/issueDelegatedCredential.js
 node issuer/issueCredentialForRobot.js
-node robot/issueCredential.js          # deprecated wrapper → issuer script
+
+# Issue + anchor in one step
+ANCHOR_GAS_MODE=actor ANCHOR_CONSUMPTION_MODE=limited ANCHOR_MAX_USES=1 npm run issue:self
+
+# Or anchor an existing credential file
+npm run anchor -- credentials/RobotSensorDataCredential.json
 ```
 
 ### Verify credentials (Node)
@@ -165,10 +222,10 @@ Runs the equivalent verification policy as the web UI (`lib/` vs mirrored `ui/js
 ```bash
 node verifier/verifyCredential.js <path-to-credential.json>
 node verifier/verifyCredential.js credentials/RobotSensorDataCredential.json
-node verifier/verifyCredential.js credentials/robot-maintenance-vc.json
+node verifier/verifyCredential.js --consume credentials/RobotSensorDataCredential.json
 ```
 
-Requires `UZHETH_POS_RPC_URL` and `REGISTRY_ADDRESS`. Exit code `0` = valid, `1` = invalid.
+Requires `UZHETH_POS_RPC_URL` and `REGISTRY_ADDRESS`. Exit code `0` = valid, `1` = invalid. Set `MAX_PUBLISH_DELAY_SECONDS` to override the default 24 h anchor timing tolerance. `--consume` verifies first, then submits `consumeCredential` using `PRIVATE_KEY`.
 
 ### Web UI
 
@@ -359,7 +416,7 @@ Never commit private keys or `.env`. Robot keys should use secure storage in pro
 
 - Key rotation does not yet require a proof-of-possession signature from the new key; rotation is also blocked while the DID is suspended.
 - Unanchored credentials are not protected against `issuedAt` backdating; high-risk types should require anchoring.
-- Browser UI and Node CLI use equivalent but separately maintained policy logic (`ui/js/` vs `lib/`) — risk of policy drift if only one side is updated.
+- Browser UI and Node CLI use equivalent but separately maintained policy logic (`ui/js/` vs `lib/`) — on-chain tx helpers are shared via `lib/cliEnv.js` and `scripts/`, but policy duplication risk remains for verification rules.
 - `proofPurpose` and per-type `maxValidityDays` are set at issuance but not fully enforced at verification (expiry and signer checks are enforced).
 - `RobotOwnershipCredential` / `OWNER_ISSUER_ROLE` exist in contracts but are not in the eight-type policy set.
 - Custom `did:uzheth` method; no full JSON-LD resolver service; not W3C VC-JWT / JWS compatible.

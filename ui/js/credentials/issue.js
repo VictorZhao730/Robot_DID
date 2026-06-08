@@ -204,14 +204,26 @@ function describeAnchorGasPayer(gasMode, { actorPrivateKey, ownerPrivateKey }) {
   return "Actor (MetaMask)";
 }
 
-function formatAnchorResult(anchorResult) {
-  return `\n\n// On-chain anchor completed\n${stringifyForDisplay(anchorResult)}`;
-}
-
 function appendAnchorResultToOutput(issuanceModel, anchorResult) {
   const targetId = credentialOutputElementId(issuanceModel);
   const output = document.getElementById(targetId);
-  output.textContent = `${output.textContent}${formatAnchorResult(anchorResult)}`;
+  const credentialText = document.getElementById("credentialText").value.trim();
+  let credential;
+
+  try {
+    credential = parseCredentialJsonInput(credentialText || output.textContent);
+  } catch (_error) {
+    credential = null;
+  }
+
+  if (!credential) {
+    throw new Error("Cannot append anchor result: credential JSON is missing or invalid");
+  }
+
+  output.textContent = stringifyForDisplay({
+    credential,
+    onChainAnchor: anchorResult,
+  });
 }
 
 async function anchorCredentialForCredential(

@@ -10,7 +10,14 @@ function getCreateRobotWallet() {
   const inputDid = document.getElementById("generatedRobotDid").value.trim();
   const did =
     selectedRobot?.activeDID ||
-    (selectedRobot?.tokenId ? didFromRobotTokenId(selectedRobot.tokenId) : "");
+    selectedRobot?.activeDID ||
+    (selectedRobot?.tokenId && selectedRobot?.robotNftAddress
+      ? didFromRobotTokenId(
+          selectedRobot.tokenId,
+          UZHETH_CHAIN_ID,
+          selectedRobot.robotNftAddress
+        )
+      : "");
 
   if (inputAddress && ethers.getAddress(inputAddress) !== address) {
     throw new Error("Generated robot address does not match private key");
@@ -22,7 +29,7 @@ function getCreateRobotWallet() {
 
   document.getElementById("generatedRobotAddress").value = address;
   document.getElementById("generatedRobotDid").value =
-    did || "Assigned after NFT registration (did:uzheth:robot:<tokenId>)";
+    did || "Assigned after NFT registration (did:uzheth:robot:<chainId>:0x<nft>:<tokenId>)";
   if (did) {
     document.getElementById("did").value = did;
   }

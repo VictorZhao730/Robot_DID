@@ -26,7 +26,7 @@ const registryAbi = [
   "function removeController(string did, address controller)",
   "function robotIdentityNFT() view returns (address)",
   "function activeDIDForRobotToken(uint256 robotTokenId) view returns (string)",
-  "function robotDidForToken(uint256 robotTokenId) pure returns (string)",
+  "function robotDidForToken(uint256 robotTokenId) view returns (string)",
   "function registerDID(string publicKey, address robotKeyAddress, string metadataURI, uint256 robotTokenId, bytes robotKeySignature)",
   "function updatePublicKey(string did, string newPublicKey, address newRobotKeyAddress)",
   "function suspendDID(string did)",

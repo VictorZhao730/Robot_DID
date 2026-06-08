@@ -26,7 +26,7 @@ describe("onChainAnchor", function () {
     const registry = {
       isCredentialAnchored: async () => true,
       getCredentialAnchor: async () => ({
-        subjectDid: "did:uzheth:robot:1",
+        subjectDid: "did:uzheth:robot:70207:0x00000000000000000000000000000000000000a1:1",
         publisher: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
         credentialType: "RobotSensorDataCredential",
         publishedAt: 1710000000n,
@@ -36,7 +36,7 @@ describe("onChainAnchor", function () {
     const result = await fetchOnChainAnchor(registry, "0xabc", true);
     expect(result).to.deep.equal({
       anchored: true,
-      subjectDid: "did:uzheth:robot:1",
+      subjectDid: "did:uzheth:robot:70207:0x00000000000000000000000000000000000000a1:1",
       publisher: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
       credentialType: "RobotSensorDataCredential",
       publishedAt: 1710000000,

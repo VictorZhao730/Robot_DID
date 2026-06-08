@@ -3,7 +3,7 @@ require("dotenv").config();
 const { ethers } = require("hardhat");
 const {
   buildDidDocument,
-  didFromRobotTokenId,
+  robotDidFromRegistry,
   signRegisterChallenge,
 } = require("../lib/didUzheth");
 
@@ -31,7 +31,7 @@ async function main() {
   const mintTx = await robotNFT.mintRobot(registryOwner.address, metadataURI);
   const mintReceipt = await mintTx.wait();
   const robotTokenId = getRobotTokenId(robotNFT, mintReceipt);
-  const did = didFromRobotTokenId(robotTokenId);
+  const did = await robotDidFromRegistry(registry, robotTokenId);
 
   if (await registry.isUsedRobotKey(robotKeyAddress)) {
     throw new Error(`Robot key already used: ${robotKeyAddress}`);
@@ -50,11 +50,13 @@ async function main() {
     challenge.signature
   );
   const receipt = await tx.wait();
+  const robotNFTAddress = await registry.robotIdentityNFT();
   const didDocument = buildDidDocument({
     did,
     publicKey,
     metadataURI,
     robotTokenId,
+    robotNftAddress: robotNFTAddress,
   });
 
   console.log("Robot NFT address:", robotNFTAddress);

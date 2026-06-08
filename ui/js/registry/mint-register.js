@@ -147,7 +147,7 @@ async function registerRobotDidForToken(robotTokenId, robotIdentity, signer, { o
     throw new Error(`Robot NFT #${robotTokenId} already has active DID: ${activeDid}`);
   }
 
-  const did = didFromRobotTokenId(robotTokenId);
+  const did = await registry.robotDidForToken(robotTokenId);
   const publicKey = robotIdentity.wallet.signingKey.publicKey;
   const robotKeyAddress = robotIdentity.address;
   if (await registry.isUsedRobotKey(robotKeyAddress)) {
@@ -172,13 +172,41 @@ async function registerRobotDidForToken(robotTokenId, robotIdentity, signer, { o
   });
 
   step("challengeVerify", "active");
+  const onChainDid = await registry.robotDidForToken(robotTokenId);
+  const onChainDigest = buildRegisterChallengeDigest(
+    onChainDid,
+    publicKey,
+    robotKeyAddress
+  );
+  const onChainRecovered = ethers.verifyMessage(
+    ethers.getBytes(onChainDigest),
+    challenge.signature
+  );
+  const onChainSignatureValid =
+    onChainRecovered.toLowerCase() === robotKeyAddress.toLowerCase();
+
   step("challengeVerify", "done", {
     recovered: challenge.recovered,
     signatureValid: challenge.signatureValid,
+    onChainDid,
+    onChainSignatureValid,
   });
 
   if (!challenge.signatureValid) {
     throw new Error("Register challenge signature does not match robot key address");
+  }
+
+  if (did !== onChainDid) {
+    throw new Error(
+      `DID mismatch: challenge used "${did}" but registry expects "${onChainDid}". Hard-refresh the page (Ctrl+Shift+R) and retry.`
+    );
+  }
+
+  if (!onChainSignatureValid) {
+    throw new Error(
+      `Signature is not valid for on-chain DID "${onChainDid}". ` +
+        "Hard-refresh the page (Ctrl+Shift+R) to load the latest UI, generate a new robot wallet, mint again, and register."
+    );
   }
 
   const metadataURI = "";

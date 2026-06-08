@@ -199,8 +199,21 @@ contract RobotDIDRegistry {
         _;
     }
 
-    function robotDidForToken(uint256 robotTokenId) public pure returns (string memory) {
-        return string(abi.encodePacked(ROBOT_DID_PREFIX, robotTokenId.toString()));
+    function robotDidForToken(uint256 robotTokenId) public view returns (string memory) {
+        return string(
+            abi.encodePacked(
+                ROBOT_DID_PREFIX,
+                block.chainid.toString(),
+                ":",
+                _addressToHexString(address(robotIdentityNFT)),
+                ":",
+                robotTokenId.toString()
+            )
+        );
+    }
+
+    function _addressToHexString(address addr) internal pure returns (string memory) {
+        return Strings.toHexString(uint256(uint160(addr)), 20);
     }
 
     function registerDID(

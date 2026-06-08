@@ -224,17 +224,13 @@ async function verifyCredentialObject(credential) {
 async function readCredentialInput() {
   const file = document.getElementById("credentialFile").files[0];
   const pastedCredential = document.getElementById("credentialText").value.trim();
-  const credential = file
-    ? JSON.parse(await file.text())
-    : pastedCredential
-      ? JSON.parse(pastedCredential)
-      : null;
-
-  if (!credential) {
-    throw new Error("Select a credential JSON file or paste credential JSON");
+  if (file) {
+    return parseCredentialJsonInput(await file.text());
   }
-
-  return credential;
+  if (pastedCredential) {
+    return parseCredentialJsonInput(pastedCredential);
+  }
+  throw new Error("Select a credential JSON file or paste credential JSON");
 }
 
 async function revokeCredentialFromInput() {

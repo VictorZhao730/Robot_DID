@@ -106,7 +106,7 @@ const credentialTypeRequirements = Object.fromEntries(
 
 const demoValues = {
   registryAddress: "0x4Db5ef3b22a0D6d3E05EF3BE80710c78e576c152",
-  did: "did:uzheth:robot:1",
+  did: "did:uzheth:robot:70207:0x4db5ef3b22a0d6d3e05ef3be80710c78e576c152:1",
   robotNftOwnerAddress: "0x3e453c9D3B8438CCF8f973A8AB8b3A70B9e1f81c",
 };
 const controllerPermissions = {

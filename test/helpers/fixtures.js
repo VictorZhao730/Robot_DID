@@ -1,5 +1,5 @@
 const { ethers } = require("hardhat");
-const { didFromRobotTokenId, signRegisterChallenge } = require("../../lib/didUzheth");
+const { signRegisterChallenge, robotDidFromRegistry } = require("../../lib/didUzheth");
 
 const metadataURI = "";
 const defaultPublicKey = "0x04robotPublicKey";
@@ -36,7 +36,7 @@ async function deployFullStack() {
   );
   await registry.waitForDeployment();
 
-  const did = didFromRobotTokenId(robotTokenId);
+  const did = await robotDidFromRegistry(registry, robotTokenId);
 
   return {
     registry,
@@ -63,7 +63,7 @@ async function registerRobotDid(
     robotSigner,
   }
 ) {
-  const did = didFromRobotTokenId(robotTokenId);
+  const did = await robotDidFromRegistry(registry, robotTokenId);
   const signer = robotSigner || owner;
   const challenge = await signRegisterChallenge(signer, did, publicKey, robotKeyAddress);
   await registry
