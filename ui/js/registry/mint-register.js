@@ -1,3 +1,4 @@
+// Three-step UI flow: mint NFT → robot signs challenge → owner submits registerDID.
 function getRobotRegistrationMinterPrivateKey() {
   return document.getElementById("robotRegistrationMinterPrivateKey").value.trim();
 }

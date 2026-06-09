@@ -1,3 +1,4 @@
+// Issue a controller-delegated VC. Requires CONTROLLER_PRIVATE_KEY + SUBJECT_ROBOT_DID.
 require("dotenv").config();
 
 const fs = require("fs");

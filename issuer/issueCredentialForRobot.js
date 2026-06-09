@@ -1,3 +1,4 @@
+// Issue an external-issuer VC. Requires ISSUER_PRIVATE_KEY + registered issuer role.
 require("dotenv").config();
 
 const fs = require("fs");

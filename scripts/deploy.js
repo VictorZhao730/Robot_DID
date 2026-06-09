@@ -1,3 +1,4 @@
+// Deploy order: NFT → IssuerRegistry → DIDRegistry (registry holds immutable refs to both).
 const { ethers, network } = require("hardhat");
 
 async function main() {

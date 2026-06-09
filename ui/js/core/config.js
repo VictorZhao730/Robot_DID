@@ -1,3 +1,4 @@
+// Shared constants and credential policies for the browser UI (kept in sync with lib/).
 const DID_METHOD_PREFIX = "did:uzheth:";
 const ROBOT_DID_PREFIX = `${DID_METHOD_PREFIX}robot:`;
 const UZHETH_CHAIN_ID = 70207;

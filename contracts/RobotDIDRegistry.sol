@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT
+// Central registry for robot DIDs: key history, controllers, suspension/revocation,
+// and optional on-chain credential anchor / consumption tracking.
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
@@ -20,6 +22,7 @@ interface ICredentialIssuerRegistry {
 contract RobotDIDRegistry {
     using Strings for uint256;
 
+    // Controller permission bitmask (owner implicitly has all three).
     uint256 public constant CONTROLLER_KEY_ROTATION = 1;
     uint256 public constant CONTROLLER_CREDENTIAL_REVOCATION = 2;
     uint256 public constant CONTROLLER_ASSERTION = 4;
@@ -216,6 +219,7 @@ contract RobotDIDRegistry {
         return Strings.toHexString(uint256(uint160(addr)), 20);
     }
 
+    // NFT owner submits registration; robot key must sign a challenge proving key possession.
     function registerDID(
         string memory publicKey,
         address robotKeyAddress,
@@ -571,6 +575,7 @@ contract RobotDIDRegistry {
         return exists[did] && !records[did].active;
     }
 
+    // Verifiers call this with credential issuedAt to reject VCs minted during suspend windows.
     function isIssuanceAllowedAt(
         string memory did,
         uint256 timestamp
@@ -791,6 +796,7 @@ contract RobotDIDRegistry {
         return ECDSA.recover(ethSignedHash, signature) == robotKeyAddress;
     }
 
+    // Management owner = current NFT holder (may differ from the robot device signing key).
     function _managementOwner(string memory did) internal view returns (address) {
         return robotIdentityNFT.ownerOf(records[did].robotTokenId);
     }
@@ -837,6 +843,7 @@ contract RobotDIDRegistry {
         return false;
     }
 
+    // Who may publish an anchor: NFT owner, current robot key, controller with assertion, or trusted issuer.
     function _canAnchor(
         string memory subjectDid,
         address publisher,

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+// One ERC-721 token per robot; NFT holder is the management owner (not the device signing key).
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";

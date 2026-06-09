@@ -1,3 +1,4 @@
+// Browser-side credential verification (mirrors lib/verifyCredentialCore.js policy).
 async function verifyCredentialObject(credential) {
   const issuer = credential.issuer;
   const subjectId = credential.credentialSubject?.id;

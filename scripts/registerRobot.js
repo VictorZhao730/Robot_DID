@@ -1,3 +1,4 @@
+// Mint RobotIdentityNFT, sign register challenge with robot key, call registerDID.
 require("dotenv").config();
 
 const { ethers } = require("hardhat");

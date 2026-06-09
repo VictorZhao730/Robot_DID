@@ -1,3 +1,4 @@
+// CLI credential verifier; exit 0 = valid, 1 = invalid. Optional --consume after verify.
 require("dotenv").config();
 
 const fs = require("fs");

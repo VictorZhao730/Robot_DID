@@ -1,3 +1,4 @@
+// Issue a robot self-signed VC (issuer DID = subject DID). Requires ROBOT_PRIVATE_KEY + ROBOT_DID.
 require("dotenv").config();
 
 const fs = require("fs");

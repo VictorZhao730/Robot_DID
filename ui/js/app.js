@@ -1,3 +1,4 @@
+// Entry point: wire UI buttons to registry / credential modules (loaded via index.html).
 document.querySelectorAll("[data-close-panel]").forEach((button) => {
   button.addEventListener("click", () => {
     hidePanel(button.dataset.closePanel);

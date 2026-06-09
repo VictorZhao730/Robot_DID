@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+// Whitelist of external credential issuers and per-type AccessControl roles.
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
